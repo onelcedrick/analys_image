@@ -14,6 +14,12 @@ Ce que produit run() :
 La protection sémantique (F3) est injectée : le détecteur de peau est un
 port du domaine (SkinDetector), câblé par l'application — ce module ne
 sait ni ne veut savoir si c'est MediaPipe ou un repli YCbCr derrière.
+
+Sens du transport (à lire absolument avant de toucher à optimal_map_1d) :
+    la LUT est indexée par les pixels que l'on TRANSFORME (la cible) et
+    renvoie, pour chacun, la valeur qui le rapproche de la distribution
+    À ATTEINDRE (la palette). Appliquée à la cible, elle lui donne la
+    distribution de la palette : c'est le transfert de palette.
 """
 
 from __future__ import annotations
@@ -61,8 +67,8 @@ class TransferStrategy:
         skin_protect = bool(params.get("skin_protect", False))
         feather = int(params.get("feather", 14))
 
-        target = bgr_to_lab(image)
-        source = bgr_to_lab(palette)
+        target = bgr_to_lab(image)    # l'image que l'on recolorie
+        source = bgr_to_lab(palette)  # la palette que l'on veut obtenir
 
         mask = None
         if skin_protect:
@@ -78,8 +84,12 @@ class TransferStrategy:
 
         for idx, name in enumerate(("L", "a", "b")):
             lo, hi = _RANGES[name]
+            # Appel par MOTS-CLÉS : le sens du transport est ici indiscutable.
+            # On déplace les pixels de la CIBLE vers la distribution de la SOURCE.
             lut, distance = optimal_map_1d(
-                source[..., idx].ravel(), target[..., idx].ravel(), (lo, hi)
+                to_reach=source[..., idx].ravel(),
+                to_move=target[..., idx].ravel(),
+                value_range=(lo, hi),
             )
             luts[name] = [round(float(v), 3) for v in lut]
             w2[name] = round(distance, 3)
@@ -104,45 +114,53 @@ class TransferStrategy:
 # ---------------------------------------------------------------------------
 
 def optimal_map_1d(
-    source: np.ndarray,
-    target: np.ndarray,
+    to_reach: np.ndarray,
+    to_move: np.ndarray,
     value_range: tuple[float, float],
     bins: int = _BINS,
 ) -> tuple[np.ndarray, float]:
     """Carte de transport optimale 1D + distance de Wasserstein-2.
 
-    Résout le problème de Monge-Kantorovich discret entre les histogrammes
-    des deux distributions (ot.emd pour le plan, ot.emd2 pour le coût),
-    puis projette chaque bin de la cible sur le barycentre de ses
-    destinations dans la source (T#mu_cible = mu_source : la cible
-    acquiert la distribution de la source — c'est le transfert de palette).
+    Construit la LUT qui, appliquée aux valeurs de ``to_move`` (la cible),
+    leur donne la distribution de ``to_reach`` (la palette). C'est le
+    transfert de palette : T#mu_cible = mu_source.
 
+    Résout le problème de Monge-Kantorovich discret entre les histogrammes
+    (ot.emd pour le plan, ot.emd2 pour le coût quadratique), puis projette
+    chaque bin de la cible sur le barycentre de ses destinations dans la
+    source. Les lignes du plan portent la masse À DÉPLACER (cible), les
+    colonnes sont les destinations (source).
+
+    :param to_reach: valeurs 1D de la distribution cible du transport (palette)
+    :param to_move:  valeurs 1D que l'on transforme (image à recolorer)
     :return: (LUT de `bins` valeurs dans le domaine réel, distance W2 réelle)
     """
     lo, hi = value_range
-    hist_s, _ = np.histogram(source, bins=bins, range=(lo, hi))
-    hist_t, _ = np.histogram(target, bins=bins, range=(lo, hi))
+    hist_reach, _ = np.histogram(to_reach, bins=bins, range=(lo, hi))  # destinations
+    hist_move, _ = np.histogram(to_move, bins=bins, range=(lo, hi))    # masse à déplacer
 
-    p_s = hist_s.astype(np.float64)
-    p_t = hist_t.astype(np.float64)
+    p_reach = hist_reach.astype(np.float64)
+    p_move = hist_move.astype(np.float64)
     # Une masse nulle ferait échouer ot.emd : on bascule sur l'uniforme.
-    if p_s.sum() == 0:
-        p_s = np.full(bins, 1.0 / bins)
-    if p_t.sum() == 0:
-        p_t = np.full(bins, 1.0 / bins)
-    p_s /= p_s.sum()
-    p_t /= p_t.sum()
+    if p_reach.sum() == 0:
+        p_reach = np.full(bins, 1.0 / bins)
+    if p_move.sum() == 0:
+        p_move = np.full(bins, 1.0 / bins)
+    p_reach /= p_reach.sum()
+    p_move /= p_move.sum()
 
     grid = np.arange(bins, dtype=np.float64)
     cost_matrix = (grid[:, None] - grid[None, :]) ** 2  # coût quadratique -> W2
 
-    w2_squared_bins = float(ot.emd2(p_t, p_s, cost_matrix))
-    plan = ot.emd(p_t, p_s, cost_matrix)  # lignes = cible, colonnes = source
+    # ot.emd(a, b) : les LIGNES somment à a. On veut les lignes = bins cible
+    # (masse à déplacer), les colonnes = bins source (destinations).
+    w2_squared_bins = float(ot.emd2(p_move, p_reach, cost_matrix))
+    plan = ot.emd(p_move, p_reach, cost_matrix)
 
-    row_mass = plan.sum(axis=1)
+    row_mass = plan.sum(axis=1)  # masse par bin CIBLE
     lut_bins = np.where(
         row_mass > 0,
-        (plan @ grid) / np.maximum(row_mass, 1e-12),
+        (plan @ grid) / np.maximum(row_mass, 1e-12),  # barycentre des destinations
         grid,  # bin cible vide -> identité
     )
 
