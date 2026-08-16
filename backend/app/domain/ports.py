@@ -94,6 +94,31 @@ class ImageLoader(Protocol):
 
 
 @runtime_checkable
+class SkinDetector(Protocol):
+    """Segmentation sémantique des zones de peau (F3).
+
+    Retourne un masque float32 0..1 de la taille de l'image :
+    1 = peau (à protéger du transfert), 0 = fond (transfert libre).
+    Le contour doit être featheré (flouté) pour éviter tout halo.
+    """
+
+    def detect(self, image: ImageArray, feather_px: int) -> ImageArray: ...
+
+
+@runtime_checkable
+class JobExecutor(Protocol):
+    """Exécute un Job — en process aujourd'hui, via arq/Redis à l'étape 11.
+
+    L'application confie le Job sans savoir "où" ni "quand" il tournera :
+    c'est ce port qui rend l'infrastructure de tâches interchangeable
+    (InProcessJobExecutor -> ArqJobExecutor sans toucher à une ligne
+    de la couche application).
+    """
+
+    async def execute(self, job: Job) -> None: ...
+
+
+@runtime_checkable
 class AnalysisStrategy(Protocol):
     """Un moteur d'analyse = une stratégie (pattern Strategy).
 

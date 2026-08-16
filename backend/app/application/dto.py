@@ -43,3 +43,57 @@ class HistogramOut(BaseModel):
     dynamic_low: int = Field(description="Percentile p1 de la dynamique utile")
     dynamic_high: int = Field(description="Percentile p99 de la dynamique utile")
     clipped_pct: float = Field(description="% de pixels saturés (<8 ou >247)")
+
+
+# ---------------------------------------------------------------------------
+# Requêtes d'analyse — bornes validées côté serveur (source de vérité)
+# ---------------------------------------------------------------------------
+
+class TransferRequest(BaseModel):
+    """Paramètres du transfert chromatique (F2 + F3)."""
+
+    image_id: str = Field(min_length=1, description="Cible à recolorer")
+    palette_id: str = Field(min_length=1, description="Source de la palette")
+    strength: float = Field(0.85, ge=0.0, le=1.0, description="Intensité du transport")
+    skin_protect: bool = Field(True, description="Épargner les zones de peau")
+    feather: int = Field(14, ge=2, le=30, description="Flou de bordure du masque (px)")
+
+
+class TextureRequest(BaseModel):
+    """Paramètres de l'amélioration locale (F4) — moteur à l'étape 7."""
+
+    image_id: str = Field(min_length=1)
+    clip: float = Field(2.6, ge=0.5, le=6.0, description="Clip limit du CLAHE")
+    smooth: int = Field(26, ge=8, le=60, description="Sigma couleur du bilatéral")
+    blend: float = Field(0.85, ge=0.0, le=1.0, description="Intensité globale")
+
+
+class ForensicRequest(BaseModel):
+    """Paramètres de l'analyse DCT (F5) — moteur à l'étape 8."""
+
+    image_id: str = Field(min_length=1)
+
+
+# ---------------------------------------------------------------------------
+# Réponses asynchrones
+# ---------------------------------------------------------------------------
+
+class JobRefOut(BaseModel):
+    """Accusé de réception d'une tâche acceptée (HTTP 202)."""
+
+    job_id: str
+    status: str
+
+
+class JobOut(BaseModel):
+    """État complet d'une tâche — sondé par le front toutes les 500 ms."""
+
+    id: str
+    kind: str
+    status: str
+    image_id: str
+    palette_id: str | None = None
+    metrics: dict = Field(default_factory=dict, description="W2, LUT, skin_pct, otsu…")
+    result_url: str | None = Field(None, description="PNG servi par /storage")
+    error: str | None = None
+    created_at: float
