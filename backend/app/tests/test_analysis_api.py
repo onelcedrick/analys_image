@@ -121,10 +121,22 @@ async def test_bornes_invalides_retournent_422(client):
     assert res.status_code == 422
 
 
-async def test_texture_sans_moteur_echoue_proprement(client):
-    """Le Job existe et termine en 'error' avec un message clair (étape 7)."""
+async def test_texture_de_bout_en_bout(client):
+    cible = await _upload(client, _png(96, 96, (120, 120, 120)))
+    res = await client.post("/api/texture", json={"image_id": cible["id"], "blend": 1.0})
+    assert res.status_code == 202
+    job = await _wait_done(client, res.json()["job_id"])
+    assert job["status"] == "done", job
+    assert "otsu_threshold" in job["metrics"]
+    assert "textured_pct" in job["metrics"]
+    assert len(job["metrics"]["joint_histogram"]) == 32
+    assert job["result_url"].startswith("/storage/results/")
+
+
+async def test_forensic_sans_moteur_echoue_proprement(client):
+    """Le Job existe et termine en 'error' avec un message clair (étape 8)."""
     cible = await _upload(client, _png(64, 64, (30, 30, 30)))
-    res = await client.post("/api/texture", json={"image_id": cible["id"]})
+    res = await client.post("/api/forensic", json={"image_id": cible["id"]})
     assert res.status_code == 202
     job = await _wait_done(client, res.json()["job_id"])
     assert job["status"] == "error"

@@ -24,6 +24,7 @@ from app.infrastructure.persistence.repositories import (
 )
 from app.infrastructure.vision.images import CvImageLoader
 from app.infrastructure.vision.skin import YcbcrSkinDetector
+from app.infrastructure.vision.texture import TextureStrategy
 from app.infrastructure.vision.transfer import TransferStrategy
 
 
@@ -60,7 +61,10 @@ def get_analysis_service(request: Request) -> AnalysisService:
     images = SqliteImageRepository(database)
     jobs = SqliteJobRepository(database)
     executor = InProcessJobExecutor(
-        strategies={TransferStrategy.kind: TransferStrategy(skin=YcbcrSkinDetector())},
+        strategies={
+            TransferStrategy.kind: TransferStrategy(skin=YcbcrSkinDetector()),
+            TextureStrategy.kind: TextureStrategy(),
+        },
         images=images,
         jobs=jobs,
         loader=CvImageLoader(store),
