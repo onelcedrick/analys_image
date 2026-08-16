@@ -39,6 +39,11 @@ class Settings(BaseSettings):
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         return self.storage_dir
 
+    @property
+    def db_path(self) -> Path:
+        """Base SQLite, colocalisée avec le stockage des binaires."""
+        return self.storage_path / "histovision.sqlite"
+
 
 @lru_cache
 def get_settings() -> Settings:

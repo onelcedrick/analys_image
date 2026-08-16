@@ -15,8 +15,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routers import health
+from app.api.routers import health, images, images
 from app.config import get_settings
+from app.infrastructure.persistence.database import Database
 
 
 @asynccontextmanager
@@ -49,7 +50,7 @@ def create_app() -> FastAPI:
 
     # ── Routers (un par ressource — livrés au fil des étapes) ──────────
     app.include_router(health.router, prefix="/api")
-    # app.include_router(images.router,   prefix="/api")   # étape 4
+    app.include_router(images.router, prefix="/api")
     # app.include_router(analysis.router, prefix="/api")   # étape 5+
     # app.include_router(jobs.router,     prefix="/api")   # étape 9
 
