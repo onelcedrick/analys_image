@@ -1,0 +1,22 @@
+# ── Web / API ─────────────────────────────────────────────
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.32,<1.0
+pydantic>=2.9,<3.0
+pydantic-settings>=2.6,<3.0
+python-multipart>=0.0.12
+
+# ── Traitement image scientifique (spec §3.2) ─────────────
+numpy>=1.26,<2.2
+scipy>=1.13,<2.0
+opencv-python-headless>=4.10,<5.0
+POT>=0.9.4,<0.10
+mediapipe>=0.10.14,<0.11
+
+# ── Infrastructure ────────────────────────────────────────
+arq>=0.26,<0.27
+redis>=5.0,<6.0
+aiosqlite>=0.20,<0.21
+
+# ── Dev / tests ───────────────────────────────────────────
+pytest>=8.3,<9.0
+httpx>=0.27,<0.29
