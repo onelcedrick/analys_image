@@ -6,16 +6,7 @@ Implémente la stratégie F2 du cahier des charges :
     en espace CIE Lab, via le plan de transport optimal (théorème de
     Brenier — en 1D, l'appariement des quantiles EST la carte optimale).
 
-Ce que produit run() :
-- le PNG résultat (transfert + blending d'intensité + protection peau) ;
-- les métriques du domaine : distances W2 par canal, courbes LUT (256 pts),
-  % de peau protégée.
-
-La protection sémantique (F3) est injectée : le détecteur de peau est un
-port du domaine (SkinDetector), câblé par l'application — ce module ne
-sait ni ne veut savoir si c'est MediaPipe ou un repli YCbCr derrière.
-
-Sens du transport (à lire absolument avant de toucher à optimal_map_1d) :
+Sens du transport (à lire avant de toucher à optimal_map_1d) :
     la LUT est indexée par les pixels que l'on TRANSFORME (la cible) et
     renvoie, pour chacun, la valeur qui le rapproche de la distribution
     À ATTEINDRE (la palette). Appliquée à la cible, elle lui donne la
@@ -84,7 +75,7 @@ class TransferStrategy:
 
         for idx, name in enumerate(("L", "a", "b")):
             lo, hi = _RANGES[name]
-            # Appel par MOTS-CLÉS : le sens du transport est ici indiscutable.
+            # Appel par MOTS-CLÉS : le sens du transport est indiscutable.
             # On déplace les pixels de la CIBLE vers la distribution de la SOURCE.
             lut, distance = optimal_map_1d(
                 to_reach=source[..., idx].ravel(),
@@ -109,10 +100,6 @@ class TransferStrategy:
         return encode_png(lab_to_bgr(out)), metrics
 
 
-# ---------------------------------------------------------------------------
-# Transport optimal 1D — le cœur mathématique
-# ---------------------------------------------------------------------------
-
 def optimal_map_1d(
     to_reach: np.ndarray,
     to_move: np.ndarray,
@@ -125,13 +112,7 @@ def optimal_map_1d(
     leur donne la distribution de ``to_reach`` (la palette). C'est le
     transfert de palette : T#mu_cible = mu_source.
 
-    Résout le problème de Monge-Kantorovich discret entre les histogrammes
-    (ot.emd pour le plan, ot.emd2 pour le coût quadratique), puis projette
-    chaque bin de la cible sur le barycentre de ses destinations dans la
-    source. Les lignes du plan portent la masse À DÉPLACER (cible), les
-    colonnes sont les destinations (source).
-
-    :param to_reach: valeurs 1D de la distribution cible du transport (palette)
+    :param to_reach: valeurs 1D de la distribution à atteindre (palette)
     :param to_move:  valeurs 1D que l'on transforme (image à recolorer)
     :return: (LUT de `bins` valeurs dans le domaine réel, distance W2 réelle)
     """
@@ -141,7 +122,6 @@ def optimal_map_1d(
 
     p_reach = hist_reach.astype(np.float64)
     p_move = hist_move.astype(np.float64)
-    # Une masse nulle ferait échouer ot.emd : on bascule sur l'uniforme.
     if p_reach.sum() == 0:
         p_reach = np.full(bins, 1.0 / bins)
     if p_move.sum() == 0:
@@ -152,8 +132,8 @@ def optimal_map_1d(
     grid = np.arange(bins, dtype=np.float64)
     cost_matrix = (grid[:, None] - grid[None, :]) ** 2  # coût quadratique -> W2
 
-    # ot.emd(a, b) : les LIGNES somment à a. On veut les lignes = bins cible
-    # (masse à déplacer), les colonnes = bins source (destinations).
+    # ot.emd(a, b) : les LIGNES somment à a. On veut lignes = bins cible
+    # (masse à déplacer), colonnes = bins source (destinations).
     w2_squared_bins = float(ot.emd2(p_move, p_reach, cost_matrix))
     plan = ot.emd(p_move, p_reach, cost_matrix)
 
@@ -176,8 +156,15 @@ def _apply_lut(
     value_range: tuple[float, float],
     bins: int = _BINS,
 ) -> np.ndarray:
-    """Applique la LUT à un canal : valeur -> bin -> valeur transportée."""
+    """Applique la LUT à un canal : valeur -> bin -> valeur transportée.
+
+    CRITIQUE : le calcul d'indice doit être IDENTIQUE à celui de
+    np.histogram (échelle `bins`, troncature vers le bas). Un arrondi ou
+    une échelle `bins - 1` décale d'un bin les distributions dégénérées
+    (images unies) : le pixel tombe alors sur un bin vide et la LUT lui
+    rend l'identité — le transfert devient silencieux.
+    """
     lo, hi = value_range
-    idx = ((channel - lo) / (hi - lo) * (bins - 1)).round().astype(np.int64)
+    idx = np.floor((channel - lo) / (hi - lo) * bins).astype(np.int64)
     np.clip(idx, 0, bins - 1, out=idx)
     return lut[idx]
