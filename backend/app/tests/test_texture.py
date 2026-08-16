@@ -56,6 +56,7 @@ def test_palette_ignoree():
     sans, m2 = TextureStrategy().run(
         img, {"clip": 2.6, "smooth": 26, "blend": 0.85}, palette=_flat()
     )
+    sans = decode_image(sans)  # run() rend des octets PNG, pas un tableau
     assert m1 == m2
     assert np.array_equal(avec, sans)
 

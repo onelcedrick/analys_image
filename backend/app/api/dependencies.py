@@ -24,6 +24,7 @@ from app.infrastructure.persistence.repositories import (
 )
 from app.infrastructure.vision.images import CvImageLoader
 from app.infrastructure.vision.skin import YcbcrSkinDetector
+from app.infrastructure.vision.forensic import ForensicStrategy
 from app.infrastructure.vision.texture import TextureStrategy
 from app.infrastructure.vision.transfer import TransferStrategy
 
@@ -64,6 +65,7 @@ def get_analysis_service(request: Request) -> AnalysisService:
         strategies={
             TransferStrategy.kind: TransferStrategy(skin=YcbcrSkinDetector()),
             TextureStrategy.kind: TextureStrategy(),
+            ForensicStrategy.kind: ForensicStrategy(),
         },
         images=images,
         jobs=jobs,

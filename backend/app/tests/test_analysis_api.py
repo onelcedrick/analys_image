@@ -45,8 +45,8 @@ async def client(app):
         yield ac
 
 
-async def _upload(client: AsyncClient, raw: bytes) -> dict:
-    res = await client.post("/api/images", files={"file": ("i.png", raw, "image/png")})
+async def _upload(client: AsyncClient, raw: bytes, mime: str = "image/png") -> dict:
+    res = await client.post("/api/images", files={"file": ("i.png", raw, mime)})
     assert res.status_code == 201
     return res.json()
 
@@ -133,14 +133,26 @@ async def test_texture_de_bout_en_bout(client):
     assert job["result_url"].startswith("/storage/results/")
 
 
-async def test_forensic_sans_moteur_echoue_proprement(client):
-    """Le Job existe et termine en 'error' avec un message clair (étape 8)."""
-    cible = await _upload(client, _png(64, 64, (30, 30, 30)))
+def _jpeg_bytes(width: int = 192, height: int = 144, seed: int = 5, quality: int = 85) -> bytes:
+    """JPEG bruité — du contenu fréquentiel pour que la DCT ait à dire."""
+    rng = np.random.default_rng(seed)
+    img = np.clip(rng.normal(128, 45, (height, width, 3)), 0, 255).astype(np.uint8)
+    img = cv2.GaussianBlur(img, (3, 3), 0)
+    ok, buffer = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
+    assert ok
+    return buffer.tobytes()
+
+
+async def test_forensic_de_bout_en_bout(client):
+    cible = await _upload(client, _jpeg_bytes(), mime="image/jpeg")
     res = await client.post("/api/forensic", json={"image_id": cible["id"]})
     assert res.status_code == 202
     job = await _wait_done(client, res.json()["job_id"])
-    assert job["status"] == "error"
-    assert "pas encore câblé" in job["error"]
+    assert job["status"] == "done", job
+    assert job["metrics"]["blocks_w"] == 192 // 8
+    assert job["metrics"]["blocks_h"] == 144 // 8
+    assert len(job["metrics"]["coeff_hist"]) == 41
+    assert job["result_url"].startswith("/storage/results/")
 
 
 async def test_job_inconnu_retourne_404(client):
