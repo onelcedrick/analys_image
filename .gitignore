@@ -1,18 +1,16 @@
-```gitignore
+```
 # Dependencies
 node_modules/
 
-# Build artifacts
+# Build outputs
 dist/
 build/
-*.min.js
-*.min.css
-*.bundle.js
+target/
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
@@ -20,24 +18,35 @@ build/
 *.swp
 *.swo
 
-# Logs and temp files
+# Logs
 *.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temporary files
 *.tmp
+*.temp
 
 # Coverage
 coverage/
 htmlcov/
 .coverage
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg-info/
-.eggs/
+# MyPy
+.mypy_cache/
+
+# Pytest
+.pytest_cache/
+
+# Gradle
+.gradle/
+
+# Maven
+target/
 
 # Compressed files
 *.zip
@@ -58,8 +67,4 @@ __pycache__/
 *.Z
 *.lz
 *.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```
