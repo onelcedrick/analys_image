@@ -67,10 +67,8 @@ class TextureStrategy:
         lab[..., 0] = clahe.apply(lab[..., 0])
         enhanced = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR).astype(np.float32)
 
-        # Voie lisse : bilatéral (d=0 -> diamètre dérivé des sigmas).
-        smoothed = cv2.bilateralFilter(
-            image, d=0, sigmaColor=smooth, sigmaSpace=smooth
-        ).astype(np.float32)
+        # Voie lisse : bilatéral (demi-résolution au-delà de 1.2 MPix, §3.3).
+        smoothed = _bilateral_smooth(image, smooth).astype(np.float32)
 
         base = image.astype(np.float32)
         combined = mask * enhanced + (1.0 - mask) * smoothed
@@ -119,6 +117,21 @@ def _joint_histogram(
     if peak <= 0:
         return np.zeros((bins, bins), dtype=np.float32)
     return (np.log1p(joint) / np.log1p(peak)).astype(np.float32)
+
+
+def _bilateral_smooth(image: np.ndarray, sigma: float) -> np.ndarray:
+    """Bilatéral — demi-résolution au-delà de 1.2 MPix (perf §3.3).
+
+    Un champ de lissage est basse fréquence : passer à moitié résolution
+    puis ré-échantillonner préserve le résultat en divisant le coût par ~4.
+    Le sigma spatial est halvé pour garder la même portée en pixels réels.
+    """
+    h, w = image.shape[:2]
+    if h * w > 1_200_000:
+        small = cv2.pyrDown(image)
+        out = cv2.bilateralFilter(small, d=0, sigmaColor=sigma, sigmaSpace=sigma / 2.0)
+        return cv2.resize(out, (w, h), interpolation=cv2.INTER_LINEAR)
+    return cv2.bilateralFilter(image, d=0, sigmaColor=sigma, sigmaSpace=sigma)
 
 
 def _otsu_threshold(values: np.ndarray, bins: int = 256) -> float:

@@ -20,3 +20,7 @@ aiosqlite>=0.20,<0.21
 # ── Dev / tests ───────────────────────────────────────────
 pytest>=8.3,<9.0
 httpx>=0.27,<0.29
+
+# ── Dashboard Streamlit (solution immédiate — spec §4) ────
+streamlit>=1.41,<2.0
+plotly>=5.24,<6.0
