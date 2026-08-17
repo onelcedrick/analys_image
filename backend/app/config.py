@@ -31,7 +31,11 @@ class Settings(BaseSettings):
     max_upload_mb: int = 20     # limite d'upload (413 au-delà)
 
     # API
-    cors_origins: list[str] = ["http://localhost:5173"]  # front Vite
+    cors_origins: list[str] = [
+        "http://localhost:5173",  # front Vite dev
+        "http://localhost:3000",  # front React/Next
+        "https://8753d196-cc2f-42a0-a586-540357edfef9.preview.qwenlm.io",  # preview Qwen
+    ]  # front Vite
 
     @property
     def storage_path(self) -> Path:
