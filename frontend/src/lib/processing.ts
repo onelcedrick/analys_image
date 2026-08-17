@@ -1,5 +1,46 @@
 import { imageToLab, rgbToLab } from './color';
 
+export async function processImageTransfer(imageDataUrl: string): Promise<any> {
+  // Simulation du traitement de transfert Lab
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        processedImage: imageDataUrl,
+        histogram: {
+          r: Array.from({ length: 256 }, (_, i) => Math.random() * 100),
+          g: Array.from({ length: 256 }, (_, i) => Math.random() * 100),
+          b: Array.from({ length: 256 }, (_, i) => Math.random() * 100)
+        },
+        transferCurve: Array.from({ length: 256 }, (_, i) => i + Math.sin(i * 0.1) * 20)
+      });
+    }, 500);
+  });
+}
+
+export async function processTextureAnalysis(imageDataUrl: string): Promise<any> {
+  // Simulation du traitement de texture
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        processedImage: imageDataUrl,
+        textureMap: imageDataUrl
+      });
+    }, 500);
+  });
+}
+
+export async function processForensicDCT(imageDataUrl: string): Promise<any> {
+  // Simulation du traitement forensic DCT
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        processedImage: imageDataUrl,
+        dctHeatmap: Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => Math.random()))
+      });
+    }, 500);
+  });
+}
+
 export function runTransfer(
   target: ImageData,
   targetLab: Float32Array,
