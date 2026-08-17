@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routers import analysis, health, images, jobs, images
+from app.api.routers import analysis, health, images, jobs
 from app.config import get_settings
 from app.infrastructure.persistence.database import Database
 
