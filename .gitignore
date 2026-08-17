@@ -1,25 +1,33 @@
-```
+```gitignore
 # Dependencies
 node_modules/
 
 # Build artifacts
 dist/
 build/
-coverage/
-htmlcov/
-*.log
+*.min.js
+*.min.css
+*.bundle.js
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Logs and temp files
+*.log
 *.tmp
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
 # Python
 __pycache__/
@@ -27,36 +35,9 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git/modules/
-*.sublime-workspace
-.pytest_cache/
-.mypy_cache/
-
-# Compiled and binary files
-*.o
-*.obj
-*.exe
-*.dll
 *.so
-*.a
-*.out
-
-# System files
-.DS_Store
-Thumbs.db
+*.egg-info/
+.eggs/
 
 # Compressed files
 *.zip
