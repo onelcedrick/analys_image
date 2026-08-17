@@ -1,0 +1,31 @@
+*   [33m971a8da[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Merge pull request #4 from onelcedrick/frontend-backend-interface-integration-
+[31m|[m[32m\[m  
+[31m|[m * [33m2a51d23[m ### HistoVision Pro Frontend Implementation
+* [32m|[m [33m444125d[m Merge pull request #3 from onelcedrick/frontend-backend-interface-integration-74a9c
+[33m|[m[32m\[m[32m|[m 
+[33m|[m * [33me4729ed[m[33m ([m[1;31morigin/frontend-backend-interface-integration-74a9c[m[33m)[m Update frontend according to provided mockup with enhanced UI components
+* [34m|[m [33m16e6b95[m Merge pull request #2 from onelcedrick/frontend-backend-interface-integration-74a9c
+[35m|[m[34m\[m[34m|[m 
+[35m|[m *   [33m2102975[m merge remote frontend-backend-interface-integration-74a9c to align history
+[35m|[m [1;31m|[m[1;32m\[m  
+[35m|[m * [1;32m|[m [33m558ca66[m Update frontend structure and enhance backend configuration
+* [1;32m|[m [1;32m|[m   [33m1901c67[m Merge pull request #1 from onelcedrick/frontend-backend-interface-integration-74a9c
+[1;32m|[m[1;32m\[m [1;32m\[m [1;32m\[m  
+[1;32m|[m [1;32m|[m[1;32m/[m [1;32m/[m  
+[1;32m|[m[1;32m/[m[1;32m|[m [1;32m/[m   
+[1;32m|[m [1;32m|[m[1;32m/[m    
+[1;32m|[m * [33m075afc5[m Create frontend directory with integrated backend interface
+[1;32m|[m[1;32m/[m  
+[1;32m|[m *   [33mded2ba6[m[33m ([m[1;35mrefs/stash[m[33m)[m On main: Sauvegarde avant fusion frontend
+[1;32m|[m[1;32m/[m[1;36m|[m[31m\[m  
+[1;32m|[m [1;36m|[m * [33m2f5e8ef[m untracked files on main: 388adef feat(J8): forensic DCT 8×8 — KL + excès de zéros, heatmap TURBO, démo autonome
+[1;32m|[m * [33m71c1970[m index on main: 388adef feat(J8): forensic DCT 8×8 — KL + excès de zéros, heatmap TURBO, démo autonome
+[1;32m|[m[1;32m/[m  
+* [33m388adef[m feat(J8): forensic DCT 8×8 — KL + excès de zéros, heatmap TURBO, démo autonome
+* [33mcd7a4b7[m fea: moteur texture — Sobel, Otsu, CLAHE sur textures, bilatéral sur lisses bug in da place
+* [33mfc1a8cc[m fix(J2): _apply_lut aligné sur le binage de np.histogram (floor, échelle bins) bug solved
+* [33m70af8d3[m fix(J2): sens du transport — LUT indexée par la cible (to_move/to_reach)
+* [33m651470d[m feat(J2-J3): API transfert — jobs 202/sondage, worker in-process, peau YCbCr still big bug
+* [33mb00e3c2[m feat(J1): tranche verticale F1 — upload, downscale, vignettes, histogrammes, avec big bug
+* [33m9a2af30[m feat(J2): domaine pur — entités, invariants et machine à états Job
+* [33mf3b838f[m feat(J1): squelette Clean Architecture + bootstrap /api/health

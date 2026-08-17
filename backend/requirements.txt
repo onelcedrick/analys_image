@@ -24,3 +24,6 @@ httpx>=0.27,<0.29
 # ── Dashboard Streamlit (solution immédiate — spec §4) ────
 streamlit>=1.41,<2.0
 plotly>=5.24,<6.0
+
+
+opencv-python-headless
