@@ -1,12 +1,12 @@
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
-import { Showroom } from "./Showroom.tsx";
+import { VizShowroom } from "./VizShowroom.tsx";
 import { ToastProvider } from "./components/toast.tsx";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <ToastProvider>
-    {/* étape 5 : banc d'essai — à remplacer par <App /> ensuite */}
-    <Showroom />
+    {/* étape 6 : banc d'essai des graphiques — à remplacer par <App /> ensuite */}
+    <VizShowroom />
   </ToastProvider>
 );
