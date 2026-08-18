@@ -29,6 +29,7 @@ import { SignalTab } from "./features/SignalTab";
 import { TransferTab, type TransferUiParams, type TrView } from "./features/TransferTab";
 import { TextureTab, type TextureUiParams, type TxView } from "./features/TextureTab";
 import { ForensicTab } from "./features/ForensicTab";
+import Sidebar from "./components/Sidebar";
 
 /* ------------------------------------------------------------------ */
 

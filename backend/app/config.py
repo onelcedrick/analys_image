@@ -32,7 +32,14 @@ class Settings(BaseSettings):
 
     # API
     cors_origins: list[str] = [
-        "http://localhost:5173",  # front Vite dev
+        "http://localhost:5173",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5174",  # front Vite dev
         "http://localhost:3000",  # front React/Next
         "https://8753d196-cc2f-42a0-a586-540357edfef9.preview.qwenlm.io",  # preview Qwen
     ]  # front Vite
