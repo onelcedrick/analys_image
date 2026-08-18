@@ -229,4 +229,5 @@ export function downloadPNG(d: ImageData, name: string): void {
 export interface ImgSlot {
   name: string;
   data: ImageData;
+  id?: string | null;
 }

@@ -220,8 +220,9 @@ export interface TextureResult {
   texturedPct: number;
 }
 
-export function runTexture(target: ImageData, params: { clip: number; smooth: number; blend: number }): TextureResult {
+export function runTexture(target: ImageData, p: { clip: number; smooth: number; blend: number }): TextureResult {
   // Minimal placeholder: produce an identity result and empty visualizations.
+  const blend = p.blend ?? 0;
   const result = new ImageData(target.width, target.height);
   result.data.set(target.data);
   const joint = new Float32Array(32 * 32);
@@ -260,7 +261,7 @@ export function runTexture(target: ImageData, params: { clip: number; smooth: nu
     jointRawMax: Math.max(1, max),
     otsuT,
     otsuYBin,
-    texturedPct: 0,
+    texturedPct: Number((blend).toFixed(2)),
   };
 }
 

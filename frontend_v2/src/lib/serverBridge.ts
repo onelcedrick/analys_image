@@ -75,6 +75,10 @@ async function upload(data: ImageData): Promise<string> {
   return meta.id;
 }
 
+export async function uploadToServer(data: ImageData): Promise<string> {
+  return upload(data);
+}
+
 async function awaitJob(jobId: string): Promise<JobOut> {
   const deadline = Date.now() + MAX_WAIT_MS;
   for (;;) {
@@ -96,6 +100,40 @@ export async function serverTransfer(
   params: { strength: number; skinProtect: boolean; feather: number }
 ): Promise<TransferResult> {
   const [imageId, paletteId] = await Promise.all([upload(target), upload(palette)]);
+  const ref = await requestTransfer({
+    image_id: imageId,
+    palette_id: paletteId,
+    strength: params.strength,
+    skin_protect: params.skinProtect,
+    feather: params.feather,
+  });
+  const job = await awaitJob(ref.job_id);
+  const m = job.metrics as {
+    w2: { L: number; a: number; b: number };
+    luts: { L: number[]; a: number[]; b: number[] };
+    skin_pct: number;
+  };
+  const result = await blobToImageData(await fetchResultBlob(job.result_url!));
+  return {
+    result,
+    unprotected: emptyImageData(),
+    mask: new Float32Array(0),
+    maskVis: emptyImageData(),
+    luts: {
+      L: Float32Array.from(m.luts.L),
+      a: Float32Array.from(m.luts.a),
+      b: Float32Array.from(m.luts.b),
+    },
+    w2: m.w2,
+    skinPct: m.skin_pct,
+  };
+}
+
+export async function serverTransferById(
+  imageId: string,
+  paletteId: string,
+  params: { strength: number; skinProtect: boolean; feather: number }
+): Promise<TransferResult> {
   const ref = await requestTransfer({
     image_id: imageId,
     palette_id: paletteId,
@@ -161,10 +199,58 @@ export async function serverTexture(
   };
 }
 
+export async function serverTextureById(imageId: string, params: { clip: number; smooth: number; blend: number }): Promise<TextureResult> {
+  const ref = await requestTexture({ image_id: imageId, clip: params.clip, smooth: params.smooth, blend: params.blend });
+  const job = await awaitJob(ref.job_id);
+  const m = job.metrics as {
+    otsu_threshold: number;
+    textured_pct: number;
+    joint_histogram: number[][];
+  };
+  const result = await blobToImageData(await fetchResultBlob(job.result_url!));
+  const joint = new Float32Array(32 * 32);
+  m.joint_histogram.forEach((row, gy) => row.forEach((v, gx) => (joint[gy * 32 + gx] = v)));
+  return {
+    result,
+    maskVis: emptyImageData(),
+    gradVis: emptyImageData(),
+    joint,
+    jointRawMax: 1,
+    otsuT: m.otsu_threshold,
+    otsuYBin: 32,
+    texturedPct: m.textured_pct,
+  };
+}
+
 /* ------------------------- F5 : forensic --------------------------- */
 
 export async function serverForensic(target: ImageData): Promise<ForensicResult> {
   const imageId = await upload(target);
+  const ref = await requestForensic({ image_id: imageId });
+  const job = await awaitJob(ref.job_id);
+  const m = job.metrics as {
+    blocks_w: number;
+    blocks_h: number;
+    flagged_pct: number;
+    mean_score: number;
+    coeff_hist: number[];
+    heatmap: number[][];
+  };
+  const scores = new Float32Array(m.blocks_w * m.blocks_h);
+  m.heatmap.forEach((row, by) => row.forEach((v, bx) => (scores[by * m.blocks_w + bx] = v)));
+  return {
+    scores,
+    bw: m.blocks_w,
+    bh: m.blocks_h,
+    cropW: m.blocks_w * 8,
+    cropH: m.blocks_h * 8,
+    hist: Float32Array.from(m.coeff_hist),
+    flaggedPct: m.flagged_pct,
+    meanScore: m.mean_score,
+  };
+}
+
+export async function serverForensicById(imageId: string): Promise<ForensicResult> {
   const ref = await requestForensic({ image_id: imageId });
   const job = await awaitJob(ref.job_id);
   const m = job.metrics as {

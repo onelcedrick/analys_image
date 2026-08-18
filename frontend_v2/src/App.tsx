@@ -20,7 +20,7 @@ import {
   type TextureResult,
   type TransferResult,
 } from "./lib/processing";
-import { serverForensic, serverTexture, serverTransfer } from "./lib/serverBridge";
+import { uploadToServer, serverTransferById, serverTextureById, serverForensicById } from "./lib/serverBridge";
 import { useServerStatus } from "./hooks/useServerStatus";
 import { Btn, BusyBar, Chip, IconDrop, IconLayers, IconScan, IconUpload, IconWave } from "./components/ui";
 import { MiniHist } from "./components/charts";
@@ -109,11 +109,24 @@ function Shell() {
           skinProtect: trParams.skinProtect,
           feather: trParams.feather,
         };
-        const res = useServer
-          ? await serverTransfer(target.data, palette.data, params)
-          : await new Promise<TransferResult>((resolve) =>
-              setTimeout(() => resolve(runTransfer(target.data, targetLab!, paletteLab!, params)), 130)
-            );
+        let res: TransferResult;
+        if (useServer) {
+          // ensure target and palette uploaded once
+          if (!target.id) {
+            const id = await uploadToServer(target.data);
+            setTarget((s) => (s ? { ...s, id } : s));
+            // reflect locally
+            target.id = id;
+          }
+          if (!palette.id) {
+            const id = await uploadToServer(palette.data);
+            setPalette((s) => (s ? { ...s, id } : s));
+            palette.id = id;
+          }
+          res = await serverTransferById(target.id!, palette.id!, params);
+        } else {
+          res = await new Promise<TransferResult>((resolve) => setTimeout(() => resolve(runTransfer(target.data, targetLab!, paletteLab!, params)), 130));
+        }
         if (!active) return;
         setTrRes(res);
         setLastOp({ op: useServer ? "OT Lab · serveur (F2+F3)" : "OT Lab · navigateur (F2+F3)", ms: performance.now() - t0 });
@@ -139,9 +152,17 @@ function Shell() {
       const t0 = performance.now();
       try {
         const params = { clip: txParams.clip, smooth: txParams.smooth, blend: txParams.blend / 100 };
-        const res = useServer
-          ? await serverTexture(target.data, params)
-          : await new Promise<TextureResult>((resolve) => setTimeout(() => resolve(runTexture(target.data, params)), 160));
+        let res: TextureResult;
+        if (useServer) {
+          if (!target.id) {
+            const id = await uploadToServer(target.data);
+            setTarget((s) => (s ? { ...s, id } : s));
+            target.id = id;
+          }
+          res = await serverTextureById(target.id!, params);
+        } else {
+          res = await new Promise<TextureResult>((resolve) => setTimeout(() => resolve(runTexture(target.data, params)), 160));
+        }
         if (!active) return;
         setTxRes(res);
         setLastOp({ op: useServer ? "Texture · serveur (F4)" : "Texture · navigateur (F4)", ms: performance.now() - t0 });
@@ -202,9 +223,17 @@ function Shell() {
     const run = async () => {
       const t0 = performance.now();
       try {
-        const res = useServer
-          ? await serverForensic(target.data)
-          : await new Promise<ForensicResult>((resolve) => setTimeout(() => resolve(runForensic(target.data)), 60));
+        let res: ForensicResult;
+        if (useServer) {
+          if (!target.id) {
+            const id = await uploadToServer(target.data);
+            setTarget((s) => (s ? { ...s, id } : s));
+            target.id = id;
+          }
+          res = await serverForensicById(target.id!);
+        } else {
+          res = await new Promise<ForensicResult>((resolve) => setTimeout(() => resolve(runForensic(target.data)), 60));
+        }
         setFxRes(res);
         setLastOp({ op: useServer ? "Forensic DCT · serveur (F5)" : "Forensic DCT · navigateur (F5)", ms: performance.now() - t0 });
       } catch (e) {
