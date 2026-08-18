@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DEMOS, KIND_META, type DemoImage } from "./data/demos";
-import { downloadPNG, loadImage, toImageData, type ImgSlot } from "./lib/imaging";
+import { downloadPNG, loadImage, toImageData, imageDataToDataURL, type ImgSlot } from "./lib/imaging";
 import { imageToLab } from "./lib/color";
 import {
   renderHeatCanvas,
@@ -22,7 +22,7 @@ import {
 } from "./lib/processing";
 import { uploadToServer, serverTransferById, serverTextureById, serverForensicById } from "./lib/serverBridge";
 import { useServerStatus } from "./hooks/useServerStatus";
-import { Btn, BusyBar, Chip, IconDrop, IconLayers, IconScan, IconUpload, IconWave } from "./components/ui";
+import { Btn, BusyBar, Chip, IconDrop, IconLayers, IconScan, IconUpload, IconWave, IconDownload, Card } from "./components/ui";
 import { MiniHist } from "./components/charts";
 import { ToastProvider, useToast } from "./components/toast";
 import { SignalTab } from "./features/SignalTab";
@@ -276,7 +276,7 @@ function Shell() {
 
       {/* ============================ HEADER =========================== */}
       <header className="sticky top-0 z-40 border-b border-line bg-bg0/85 backdrop-blur-md">
-        <div className="mx-auto flex h-[58px] max-w-[1500px] items-center gap-4 px-4 sm:px-6">
+        <div className="app-container flex h-[58px] items-center gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <svg width="34" height="34" viewBox="0 0 34 34" className="shrink-0">
               <rect width="34" height="34" rx="8" fill="#111a29" stroke="#2e405f" />
@@ -317,47 +317,9 @@ function Shell() {
       </header>
 
       {/* ============================= CORPS =========================== */}
-      <div className="mx-auto flex w-full max-w-[1500px] flex-1 gap-5 px-4 py-5 sm:px-6">
+          <div className="app-container flex w-full flex-1 gap-5 px-4 py-5 sm:px-6">
         {/* -------- sidebar banque d'images -------- */}
-        <aside className="hidden w-[228px] shrink-0 lg:block">
-          <div className="sticky top-[78px] space-y-4">
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-faint">Banque d'images</span>
-                <span className="font-mono text-[10px] text-faint">{DEMOS.length}</span>
-              </div>
-              <div className="space-y-2">
-                {DEMOS.map((d) => (
-                  <DemoRow
-                    key={d.id}
-                    d={d}
-                    isTarget={target?.name === d.label}
-                    isPalette={palette?.name === d.label}
-                    meta={KIND_META[d.kind]}
-                    onTarget={() => loadDemo(d, "target")}
-                    onPalette={() => loadDemo(d, "palette")}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Btn variant="teal" className="w-full" onClick={() => fileTargetRef.current?.click()}>
-                <IconUpload /> Importer une cible
-              </Btn>
-              <Btn variant="ghost" className="w-full" onClick={() => filePaletteRef.current?.click()}>
-                <IconDrop /> Importer une palette
-              </Btn>
-              <p className="text-[10.5px] leading-relaxed text-faint">JPG/PNG · redimensionné auto ≤ 1000 px (perf §3.3).</p>
-            </div>
-
-            <div className="rounded-xl border border-line bg-panel p-3">
-              <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-faint">Slots actifs</div>
-              <SlotLine label="CIBLE" name={target?.name ?? "—"} tone="text-amber" />
-              <SlotLine label="PALETTE" name={palette?.name ?? "—"} tone="text-rose" />
-            </div>
-          </div>
-        </aside>
+          <Sidebar target={target} palette={palette} fileTargetRef={fileTargetRef} filePaletteRef={filePaletteRef} loadDemo={loadDemo} />
 
         {/* -------- colonne principale -------- */}
         <main className="min-w-0 flex-1">
@@ -437,7 +399,7 @@ function Shell() {
 
       {/* ============================ FOOTER =========================== */}
       <footer className="mt-auto border-t border-line bg-bg1/70">
-        <div className="mx-auto flex h-10 max-w-[1500px] items-center gap-4 px-4 font-mono text-[10.5px] text-faint sm:px-6">
+        <div className="app-container flex h-10 items-center gap-4 px-4 font-mono text-[10.5px] text-faint sm:px-6">
           <span className="flex items-center gap-2">
             <span className={`h-1.5 w-1.5 rounded-full ${busy ? "animate-pulse-dot bg-amber" : "bg-teal"}`} />
             <span className={busy ? "text-amber" : "text-sub"}>{busy ?? "pipeline idle — prêt"}</span>

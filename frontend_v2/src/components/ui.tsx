@@ -99,7 +99,10 @@ export const IconServer = () => (
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-xl border border-line bg-panel/90 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.9)] ${className}`}>
+    <section
+      className={`rounded-xl border border-line bg-panel/90 shadow-[0_10px_30px_-12px_rgba(2,6,23,0.6)] ${className}`}
+      style={{ overflow: "hidden" }}
+    >
       {children}
     </section>
   );

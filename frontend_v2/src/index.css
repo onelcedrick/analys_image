@@ -22,6 +22,7 @@
   --color-chg: #46e08d;
   --color-chb: #5ca9ff;
   --color-chl: #cbd5e1;
+  --container-max: 1500px;
 }
 
 html, body, #root { height: 100%; }
@@ -31,6 +32,12 @@ body {
   color: var(--color-ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+}
+
+/* layout container max width to mirror Histo layout */
+.app-container {
+  max-width: var(--container-max);
+  margin-inline: auto;
 }
 
 ::selection { background: rgba(255, 178, 36, 0.32); color: #fff7e6; }

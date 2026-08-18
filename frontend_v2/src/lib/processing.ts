@@ -220,23 +220,23 @@ export interface TextureResult {
   texturedPct: number;
 }
 
-export function runTexture(target: ImageData, p: { clip: number; smooth: number; blend: number }): TextureResult {
+export function runTexture(target: ImageData, opts: { clip: number; smooth: number; blend: number }): TextureResult {
   // Minimal placeholder: produce an identity result and empty visualizations.
-  const blend = p.blend ?? 0;
+  const blend = opts.blend ?? 0;
   const result = new ImageData(target.width, target.height);
   result.data.set(target.data);
   const joint = new Float32Array(32 * 32);
   // build a simple joint histogram from luminance x gradient (very cheap)
   const w = target.width;
   const h = target.height;
-  const p = target.data;
+  const pix = target.data;
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       const i = (y * w + x) * 4;
-      const lum = Math.round(0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]);
+      const lum = Math.round(0.299 * pix[i] + 0.587 * pix[i + 1] + 0.114 * pix[i + 2]);
       // simple gradient magnitude
-      const gx = Math.abs(p[i + 4] - p[i - 4]);
-      const gy = Math.abs(p[i + w * 4] - p[i - w * 4]);
+      const gx = Math.abs(pix[i + 4] - pix[i - 4]);
+      const gy = Math.abs(pix[i + w * 4] - pix[i - w * 4]);
       const g = Math.min(255, Math.round(Math.hypot(gx, gy)));
       const by = Math.min(31, (g / 255) * 31 | 0);
       const bx = Math.min(31, (lum / 255) * 31 | 0);
