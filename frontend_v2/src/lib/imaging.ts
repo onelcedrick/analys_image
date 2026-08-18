@@ -225,3 +225,8 @@ export function downloadPNG(d: ImageData, name: string): void {
   a.download = name;
   a.click();
 }
+
+export interface ImgSlot {
+  name: string;
+  data: ImageData;
+}

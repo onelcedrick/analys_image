@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { renderHeatCanvas } from "../lib/processing";
+import type { ForensicResult } from "../lib/processing";
 
 export function CompareSlider({
   before,
@@ -87,3 +89,45 @@ export function CompareSlider({
 }
 
 export default CompareSlider;
+
+export function CanvasView({ data, className }: { data: ImageData | null; className?: string }) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    if (!data) {
+      // clear
+      c.width = 1;
+      c.height = 1;
+      ctx.clearRect(0, 0, 1, 1);
+      return;
+    }
+    c.width = data.width;
+    c.height = data.height;
+    c.style.width = "100%";
+    c.style.height = "auto";
+    ctx.putImageData(data, 0, 0);
+  }, [data]);
+  if (!data) return <div className={className} />;
+  return <canvas ref={ref} className={`${className ?? "w-full"} rounded-lg`} />;
+}
+
+export function HeatOverlay({ forensic, opacity }: { forensic: ForensicResult; opacity: number }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    // clear
+    root.innerHTML = "";
+    const c = renderHeatCanvas(forensic);
+    c.style.width = "100%";
+    c.style.height = "auto";
+    c.style.opacity = String(opacity / 100);
+    c.style.pointerEvents = "none";
+    c.className = "absolute inset-0 h-auto w-full";
+    root.appendChild(c);
+  }, [forensic, opacity]);
+  return <div ref={ref} className="absolute inset-0" />;
+}

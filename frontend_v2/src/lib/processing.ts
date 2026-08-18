@@ -206,3 +206,134 @@ export function runTransfer(target: ImageData, targetLab: Lab3, refLab: Lab3, pa
 }
 
 /* La partie 2/2 (F4 texture + F5 DCT) arrive à l'étape 4. */
+
+/* --------------------- F4 : texture (stub impl.) ------------------ */
+
+export interface TextureResult {
+  result: ImageData;
+  maskVis: ImageData;
+  gradVis: ImageData;
+  joint: Float32Array;
+  jointRawMax: number;
+  otsuT: number;
+  otsuYBin: number;
+  texturedPct: number;
+}
+
+export function runTexture(target: ImageData, params: { clip: number; smooth: number; blend: number }): TextureResult {
+  // Minimal placeholder: produce an identity result and empty visualizations.
+  const result = new ImageData(target.width, target.height);
+  result.data.set(target.data);
+  const joint = new Float32Array(32 * 32);
+  // build a simple joint histogram from luminance x gradient (very cheap)
+  const w = target.width;
+  const h = target.height;
+  const p = target.data;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = (y * w + x) * 4;
+      const lum = Math.round(0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]);
+      // simple gradient magnitude
+      const gx = Math.abs(p[i + 4] - p[i - 4]);
+      const gy = Math.abs(p[i + w * 4] - p[i - w * 4]);
+      const g = Math.min(255, Math.round(Math.hypot(gx, gy)));
+      const by = Math.min(31, (g / 255) * 31 | 0);
+      const bx = Math.min(31, (lum / 255) * 31 | 0);
+      joint[by * 32 + bx] += 1;
+    }
+  }
+  let max = 0;
+  for (let i = 0; i < joint.length; i++) if (joint[i] > max) max = joint[i];
+
+  const maskVis = new ImageData(1, 1);
+  const gradVis = new ImageData(1, 1);
+
+  // otsu threshold stub
+  const otsuT = 0.0;
+  const otsuYBin = 32; // out-of-range (no line)
+
+  return {
+    result,
+    maskVis,
+    gradVis,
+    joint,
+    jointRawMax: Math.max(1, max),
+    otsuT,
+    otsuYBin,
+    texturedPct: 0,
+  };
+}
+
+/* --------------------- F5 : forensic (stub impl.) ----------------- */
+
+export interface ForensicResult {
+  scores: Float32Array;
+  bw: number;
+  bh: number;
+  cropW: number;
+  cropH: number;
+  hist: Float32Array;
+  flaggedPct: number;
+  meanScore: number;
+}
+
+export function runForensic(target: ImageData): ForensicResult {
+  const bw = Math.max(1, Math.floor(target.width / 8));
+  const bh = Math.max(1, Math.floor(target.height / 8));
+  const scores = new Float32Array(bw * bh);
+  // naive: fill with low random-ish values based on pixel data
+  const p = target.data;
+  let acc = 0;
+  for (let by = 0; by < bh; by++) {
+    for (let bx = 0; bx < bw; bx++) {
+      const x = Math.min(target.width - 1, (bx * 8) | 0);
+      const y = Math.min(target.height - 1, (by * 8) | 0);
+      const i = (y * target.width + x) * 4;
+      const v = (p[i] + p[i + 1] + p[i + 2]) / (3 * 255);
+      const s = Math.max(0, Math.min(1, v * 0.2));
+      scores[by * bw + bx] = s;
+      acc += s;
+    }
+  }
+  const mean = acc / scores.length;
+  const hist = new Float32Array(41);
+  hist[20] = 1.0; // center spike stub
+  return {
+    scores,
+    bw,
+    bh,
+    cropW: bw * 8,
+    cropH: bh * 8,
+    hist,
+    flaggedPct: 0,
+    meanScore: mean,
+  };
+}
+
+export function renderHeatCanvas(res: ForensicResult): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = res.cropW;
+  c.height = res.cropH;
+  const ctx = c.getContext("2d")!;
+  const img = ctx.createImageData(c.width, c.height);
+  // simple upsample of block scores
+  for (let by = 0; by < res.bh; by++) {
+    for (let bx = 0; bx < res.bw; bx++) {
+      const s = Math.max(0, Math.min(1, res.scores[by * res.bw + bx]));
+      const color = Math.floor(255 * s);
+      for (let yy = 0; yy < 8; yy++) {
+        for (let xx = 0; xx < 8; xx++) {
+          const x = bx * 8 + xx;
+          const y = by * 8 + yy;
+          const i = (y * c.width + x) * 4;
+          img.data[i] = color;
+          img.data[i + 1] = 0;
+          img.data[i + 2] = 0;
+          img.data[i + 3] = Math.floor(180 * s + 40);
+        }
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
