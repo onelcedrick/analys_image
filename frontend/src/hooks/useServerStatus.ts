@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-const BACKEND_BASE = 'http://localhost:8000';
+const BASE_URL = 'http://localhost:8000';
 
 export function useServerStatus() {
   const [serverUp, setServerUp] = useState(false);
@@ -10,7 +10,7 @@ export function useServerStatus() {
     let alive = true;
     const check = async () => {
       try {
-        const res = await fetch(`${BACKEND_BASE}/health`, { method: 'GET' });
+        const res = await fetch(`${BASE_URL}/health`, { signal: AbortSignal.timeout(1500) });
         if (alive) setServerUp(res.ok);
       } catch {
         if (alive) setServerUp(false);
@@ -19,8 +19,9 @@ export function useServerStatus() {
       }
     };
     check();
-    return () => { alive = false; };
+    const id = setInterval(check, 5000);
+    return () => { alive = false; clearInterval(id); };
   }, []);
 
-  return { serverUp, checking, base: BACKEND_BASE };
+  return { serverUp, checking, base: BASE_URL };
 }
