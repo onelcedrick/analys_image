@@ -1,13 +1,4 @@
-"""Bootstrap FastAPI — HistoVision Pro.
-
-Clean Architecture : ce module ne fait qu'ASSEMBLER les couches.
-    api (livraison HTTP)  ->  application (cas d'usage)  ->  domain (métier)
-                                    ^
-                     infrastructure (adaptateurs : OpenCV, POT, SQLite...)
-
-On n'y trouve donc aucune logique métier — seulement la fabrique
-d'application (pattern Factory), le middleware CORS et les montages.
-"""
+"""Bootstrap FastAPI — HistoVision Pro."""
 
 from contextlib import asynccontextmanager
 
@@ -22,14 +13,16 @@ from app.infrastructure.persistence.database import Database
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Cycle de vie : démarrage (stockage, puis DB/worker aux étapes suivantes)."""
+    """Stockage disque + schéma SQLite (requis pour upload / jobs)."""
     settings = get_settings()
-    settings.storage_path  # crée ./storage si absent
+    settings.storage_path
+    db = Database(settings.db_path)
+    await db.init()
+    app.state.database = db
     yield
 
 
 def create_app() -> FastAPI:
-    """Fabrique d'application — testable et réutilisable (pytest, ASGI)."""
     settings = get_settings()
 
     app = FastAPI(
@@ -39,7 +32,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Le front Vite (React) tourne sur :5173 — on autorise ses appels.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -48,14 +40,12 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # ── Routers (un par ressource — livrés au fil des étapes) ──────────
     app.include_router(health.router, prefix="/api")
     app.include_router(images.router, prefix="/api")
     app.include_router(analysis.router, prefix="/api")
     app.include_router(jobs.router, prefix="/api")
 
-    # Les vignettes / résultats PNG sont servis en statique.
-    app.mount("/storage", StaticFiles(directory=settings.storage_path), name="storage")
+    app.mount("/storage", StaticFiles(directory=str(settings.storage_path)), name="storage")
 
     return app
 

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     app_name: str = "HistoVision API"
     app_version: str = "1.0.0"
 
+    # Sécurité
+    secret_key: str = "dev-secret-key-change-me"
+    jwt_algorithm: str = "HS256"
+
     # Persistance
     storage_dir: Path = Path("./storage")
 
@@ -31,16 +35,14 @@ class Settings(BaseSettings):
     max_upload_mb: int = 20     # limite d'upload (413 au-delà)
 
     # API
+    api_base_url: str = "http://127.0.0.1:8000"
     cors_origins: list[str] = [
         "http://localhost:5173",
-        "http://localhost:5173",
-        "http://localhost:5174",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://localhost:5174",  # front Vite dev
-        "http://localhost:3000",  # front React/Next
+        "http://localhost:5174",  # front Vite dev # front React/Next
         "https://8753d196-cc2f-42a0-a586-540357edfef9.preview.qwenlm.io",  # preview Qwen
     ]  # front Vite
 

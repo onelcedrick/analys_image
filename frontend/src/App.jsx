@@ -4,11 +4,13 @@ import { HistogramChart, TransferCurve, TextureMap, DCTHeatmap } from './compone
 import { Button, Card, SectionTitle, StatCard, Toggle, SegmentedControl } from './components/ui';
 import { useServerStatus } from './hooks/useServerStatus';
 import { processImageTransfer, processTextureAnalysis, processForensicDCT } from './lib/processing';
+import * as api from './lib/serverBridge';
 import { DEMO_IMAGES } from './data/demos';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('signal');
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
   const [viewMode, setViewMode] = useState('original'); // original, processed, difference
@@ -18,6 +20,7 @@ export default function App() {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setSelectedImage(event.target.result);
@@ -29,39 +32,85 @@ export default function App() {
 
   const loadDemoImage = (url) => {
     setSelectedImage(url);
+    // clear selectedFile (demo images are URLs)
+    setSelectedFile(null);
     setResults(null);
   };
+
+  // Convert a remote URL or dataURL to a File for upload to backend
+  async function urlToFile(url, filename = 'upload.png') {
+    if (url.startsWith('data:')) {
+      // data URL
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return new File([blob], filename, { type: blob.type });
+    }
+    const res = await fetch(url);
+    const blob = await res.blob();
+    // try to guess filename from url
+    const name = filename || url.split('/').pop().split('?')[0];
+    return new File([blob], name, { type: blob.type || 'image/png' });
+  }
 
   // Traitement selon l'onglet actif
   const handleProcess = async () => {
     if (!selectedImage) return;
-    
+
     setIsProcessing(true);
     try {
-      let result;
-      switch (activeTab) {
-        case 'transfer':
-          result = await processImageTransfer(selectedImage);
-          break;
-        case 'texture':
-          result = await processTextureAnalysis(selectedImage);
-          break;
-        case 'forensic':
-          result = await processForensicDCT(selectedImage);
-          break;
-        default:
-          // Simulation pour l'onglet signal
-          result = {
-            processedImage: selectedImage,
-            histogram: {
-              r: Array.from({ length: 256 }, (_, i) => Math.random() * 100),
-              g: Array.from({ length: 256 }, (_, i) => Math.random() * 100),
-              b: Array.from({ length: 256 }, (_, i) => Math.random() * 100)
-            }
-          };
+      // If backend is available, prefer server processing for heavy tasks
+      if (serverStatus.online) {
+        // determine a File to upload
+        let fileToUpload = selectedFile;
+        if (!fileToUpload) {
+          // convert URL/dataURL to File
+          fileToUpload = await urlToFile(selectedImage, 'demo.png');
+        }
+
+        const type = activeTab === 'forensic' ? 'forensic' : activeTab === 'texture' ? 'texture' : 'transfer';
+        const { result: imgData, metrics } = await api.processWithBackend(type, fileToUpload);
+
+        // convert ImageData to dataURL for preview
+        const canvas = document.createElement('canvas');
+        canvas.width = imgData.width;
+        canvas.height = imgData.height;
+        const ctx = canvas.getContext('2d');
+        ctx.putImageData(imgData, 0, 0);
+        const dataUrl = canvas.toDataURL('image/png');
+
+        const out: any = { processedImage: dataUrl };
+        if (metrics) out.metrics = metrics;
+        if (metrics && metrics.dctHeatmap) out.dctHeatmap = metrics.dctHeatmap;
+
+        setResults(out);
+        setViewMode('processed');
+      } else {
+        // offline / simulation: keep existing client-side simulated processors
+        let result;
+        switch (activeTab) {
+          case 'transfer':
+            result = await processImageTransfer(selectedImage);
+            break;
+          case 'texture':
+            result = await processTextureAnalysis(selectedImage);
+            break;
+          case 'forensic':
+            result = await processForensicDCT(selectedImage);
+            break;
+          default:
+            // Simulation pour l'onglet signal
+            result = {
+              processedImage: selectedImage,
+              histogram: {
+                r: Array.from({ length: 256 }, (_, i) => Math.random() * 100),
+                g: Array.from({ length: 256 }, (_, i) => Math.random() * 100),
+                b: Array.from({ length: 256 }, (_, i) => Math.random() * 100)
+              }
+            };
+        }
+        setResults(result);
+        setViewMode('processed');
       }
-      setResults(result);
-      setViewMode('processed');
     } catch (error) {
       console.error('Erreur de traitement:', error);
     } finally {

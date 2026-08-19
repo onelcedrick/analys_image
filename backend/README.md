@@ -65,3 +65,7 @@ Clean Architecture :
 ```bash
 pytest
 ```
+cd histovision-pro/backend
+source .venv/bin/activate   # si venv déjà créé
+pip install -r requirements.txt   # une fois
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
