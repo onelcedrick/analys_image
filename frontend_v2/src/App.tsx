@@ -423,7 +423,7 @@ function Shell() {
               <div className="flex items-center gap-2">
                 <span className="font-display text-[18px] font-bold tracking-tight text-ink">HistoVision</span>
                 <span className="rounded border border-line bg-panel2 px-1.5 py-0.5 font-mono text-[8.5px] font-semibold uppercase tracking-[0.16em] text-faint">
-                  v1.0
+              
                 </span>
               </div>
             </div>
