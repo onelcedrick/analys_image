@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: histovision-api
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: HISTOVISION_STORAGE_BACKEND
+        value: local
+      - key: HISTOVISION_DATABASE_BACKEND
+        value: sqlite
+      - key: HISTOVISION_MAX_SIDE
+        value: "1080"
+      - key: HISTOVISION_MAX_UPLOAD_MB
+        value: "20"
+      - key: HISTOVISION_CORS_ORIGINS
+        value: '["https://your-frontend.onrender.com","http://localhost:5173","http://127.0.0.1:5173"]'
+      - key: HISTOVISION_SECRET_KEY
+        generateValue: true

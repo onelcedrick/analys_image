@@ -29,6 +29,7 @@ import { TransferTab, type TransferUiParams, type TrView } from "./features/Tran
 import { TextureTab, type TextureUiParams, type TxView } from "./features/TextureTab";
 import { ForensicTab } from "./features/ForensicTab";
 import Sidebar from "./components/Sidebar";
+import type { DemoImage } from "./data/demos";
 
 /* ------------------------------------------------------------------ */
 
