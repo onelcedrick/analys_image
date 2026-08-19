@@ -1,91 +1,71 @@
-import { DEMOS } from "../data/demos";
-import { Btn, Chip, Card, IconDrop, IconUpload, IconDownload } from "./ui";
-import { imageDataToDataURL, downloadPNG } from "../lib/imaging";
+import { Btn, Card, IconDownload, IconUpload } from "./ui";
+import { downloadPNG, imageDataToDataURL } from "../lib/imaging";
 
-export default function Sidebar({ target, palette, fileTargetRef, filePaletteRef, loadDemo }: any) {
+export default function Sidebar({ target, fileTargetRef }: any) {
+  const activeImage = target;
+
   return (
-    <aside className="hidden w-[228px] shrink-0 lg:block">
-      <div className="sticky top-[78px] space-y-4">
-        <Card className="p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-faint">Prévisualisations</span>
+    <aside className="w-full shrink-0 lg:w-[300px]">
+      <div className="sticky top-[78px]">
+        <Card className="overflow-hidden border border-line/80 bg-panel/85 p-4 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.9)]">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-faint">Photo active</p>
+              <h3 className="mt-1 text-lg font-semibold tracking-tight text-ink">Cible</h3>
+            </div>
+            <span className="rounded-full border border-teal/40 bg-teal/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-teal">
+              {activeImage ? "OK" : "VIDE"}
+            </span>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <div className="text-[10px] font-mono text-faint">CIBLE</div>
-              {target ? (
-                <img src={imageDataToDataURL(target.data)} alt={target.name} className="h-24 w-full object-cover rounded-md border border-line" />
-              ) : (
-                <div className="h-24 w-full rounded-md bg-panel2/40 flex items-center justify-center text-faint">Aucune</div>
-              )}
-              <div className="flex gap-2">
-                <Btn variant="ghost" onClick={() => fileTargetRef.current?.click()}>Changer</Btn>
-                <Btn variant="ghost" onClick={() => target && downloadPNG(target.data, `target-${target.name}.png`)} disabled={!target}><IconDownload /> PNG</Btn>
+
+          <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-panel2 via-panel to-bg1">
+            {activeImage ? (
+              <img
+                src={imageDataToDataURL(activeImage.data)}
+                alt={activeImage.name}
+                className="h-[230px] w-full object-cover sm:h-[260px] lg:h-[300px]"
+              />
+            ) : (
+              <div className="flex h-[230px] w-full items-center justify-center bg-panel2/50 text-sm text-faint sm:h-[260px] lg:h-[300px]">
+                Aucune photo chargée
+              </div>
+            )}
+          </div>
+
+          {activeImage && (
+            <div className="mt-4 rounded-xl border border-line/80 bg-bg1/50 px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-sm font-medium text-ink">{activeImage.name}</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber">
+                  {activeImage.data.width}×{activeImage.data.height}
+                </span>
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="text-[10px] font-mono text-faint">PALETTE</div>
-              {palette ? (
-                <img src={imageDataToDataURL(palette.data)} alt={palette.name} className="h-24 w-full object-cover rounded-md border border-line" />
-              ) : (
-                <div className="h-24 w-full rounded-md bg-panel2/40 flex items-center justify-center text-faint">Aucune</div>
-              )}
-              <div className="flex gap-2">
-                <Btn variant="ghost" onClick={() => filePaletteRef.current?.click()}>Changer</Btn>
-                <Btn variant="ghost" onClick={() => palette && downloadPNG(palette.data, `palette-${palette.name}.png`)} disabled={!palette}><IconDownload /> PNG</Btn>
-              </div>
+          )}
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+            <Btn variant="teal" className="w-full" onClick={() => fileTargetRef.current?.click()}>
+              <IconUpload /> Importer
+            </Btn>
+            <Btn
+              variant="ghost"
+              className="w-full"
+              onClick={() => activeImage && downloadPNG(activeImage.data, `target-${activeImage.name}.png`)}
+              disabled={!activeImage}
+            >
+              <IconDownload /> Exporter PNG
+            </Btn>
+          </div>
+
+          <div className="mt-4 space-y-2 border-t border-line/80 pt-4 text-[11px] text-sub">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-faint">Format</span>
+              <span className="font-medium text-ink">JPG / PNG</span>
             </div>
-          </div>
-        </Card>
-
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-faint">Banque d'images</span>
-            <span className="font-mono text-[10px] text-faint">{DEMOS.length}</span>
-          </div>
-          <div className="space-y-2">
-            {DEMOS.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => loadDemo(d, "target")}
-                className={`group relative overflow-hidden rounded-xl border transition-all duration-200 ${
-                  d.label === (target?.name ?? "") ? "border-amber/70 ring-2 ring-amber/20" : d.label === (palette?.name ?? "") ? "border-rose/60 ring-2 ring-rose/15" : "border-line hover:border-line2"
-                }`}
-              >
-                <img src={d.url} alt={d.label} className="h-[74px] w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" loading="lazy" />
-                <div className="bg-panel px-2.5 py-1.5">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="truncate text-[11px] font-semibold text-ink">{d.label}</span>
-                    <span className={`flex shrink-0 items-center gap-1 rounded border px-1.5 py-px font-mono text-[8.5px] font-bold uppercase tracking-wider ${d.meta?.cls ?? ""}`}>
-                      <span className={`h-1 w-1 rounded-full ${d.meta?.dot ?? ""}`} />
-                      {d.meta?.label ?? ""}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Btn variant="teal" className="w-full" onClick={() => fileTargetRef.current?.click()}>
-            <IconUpload /> Importer une cible
-          </Btn>
-          <Btn variant="ghost" className="w-full" onClick={() => filePaletteRef.current?.click()}>
-            <IconDrop /> Importer une palette
-          </Btn>
-          <p className="text-[10.5px] leading-relaxed text-faint">JPG/PNG · redimensionné auto ≤ 1000 px (perf §3.3).</p>
-        </div>
-
-        <Card className="p-3">
-          <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-faint">Slots actifs</div>
-          <div className="flex items-center justify-between gap-2 py-1">
-            <span className={`font-mono text-[9.5px] font-bold tracking-wider text-amber`}>CIBLE</span>
-            <span className="truncate text-[11px] text-sub">{target?.name ?? "—"}</span>
-          </div>
-          <div className="flex items-center justify-between gap-2 py-1">
-            <span className={`font-mono text-[9.5px] font-bold tracking-wider text-rose`}>PALETTE</span>
-            <span className="truncate text-[11px] text-sub">{palette?.name ?? "—"}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-faint">Traitement</span>
+              <span className="font-medium text-ink">Auto redimension</span>
+            </div>
           </div>
         </Card>
       </div>

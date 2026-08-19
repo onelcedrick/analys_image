@@ -1,4 +1,5 @@
-const CANDIDATE_BASES = ["", "http://127.0.0.1:8000", "http://localhost:8000"];
+const envBase = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+const CANDIDATE_BASES = [envBase, "", "http://127.0.0.1:8000", "http://localhost:8000"].filter(Boolean);
 
 export class ApiError extends Error {
   status: number;

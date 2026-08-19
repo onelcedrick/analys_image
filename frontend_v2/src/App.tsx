@@ -318,7 +318,7 @@ function Shell() {
       </header>
 
       {/* ============================= CORPS =========================== */}
-          <div className="app-container flex w-full flex-1 gap-5 px-4 py-5 sm:px-6">
+          <div className="app-container flex w-full flex-1 flex-col gap-5 px-4 py-5 sm:px-6 lg:flex-row">
         {/* -------- sidebar banque d'images -------- */}
           <Sidebar target={target} palette={palette} fileTargetRef={fileTargetRef} filePaletteRef={filePaletteRef} loadDemo={loadDemo} />
 
