@@ -21,15 +21,13 @@ import {
 } from "./lib/processing";
 import { uploadToServer, serverTransferById, serverTextureById, serverForensicById } from "./lib/serverBridge";
 import { useServerStatus } from "./hooks/useServerStatus";
-import { Btn, BusyBar, Chip, IconDrop, IconLayers, IconScan, IconUpload, IconWave, IconDownload, Card } from "./components/ui";
-import { MiniHist } from "./components/charts";
+import { BusyBar, IconDrop, IconLayers, IconScan, IconWave } from "./components/ui";
 import { ToastProvider, useToast } from "./components/toast";
 import { SignalTab } from "./features/SignalTab";
 import { TransferTab, type TransferUiParams, type TrView } from "./features/TransferTab";
 import { TextureTab, type TextureUiParams, type TxView } from "./features/TextureTab";
 import { ForensicTab } from "./features/ForensicTab";
 import Sidebar from "./components/Sidebar";
-import type { DemoImage } from "./data/demos";
 
 /* ------------------------------------------------------------------ */
 
@@ -146,9 +144,8 @@ function Shell() {
   }, [notify, uploadedImages]);
 
   /* ---- Bascule Serveur (FastAPI) ⇄ Navigateur (repli local) ---- */
-  const { serverUp, base, checking } = useServerStatus();
-  const [mode, setMode] = useState<"server" | "browser">("server");
-  const useServer = mode === "server" && serverUp;
+  const { serverUp } = useServerStatus();
+  const useServer = serverUp;
 
   const [trParams, setTrParams] = useState<TransferUiParams>({ strength: 85, skinProtect: true, feather: 14 });
   const [trRes, setTrRes] = useState<TransferResult | null>(null);
@@ -170,18 +167,6 @@ function Shell() {
   /* --------------------------- dérivés ------------------------------ */
   const targetLab = useMemo(() => (target ? imageToLab(target.data) : null), [target]);
   const paletteLab = useMemo(() => (palette ? imageToLab(palette.data) : null), [palette]);
-
-  const lumHist = useMemo(() => {
-    if (!target) return null;
-    const h = new Uint32Array(256);
-    const p = target.data.data;
-    const n = target.data.width * target.data.height;
-    for (let i = 0; i < n; i++) {
-      const j = i * 4;
-      h[Math.round(0.299 * p[j] + 0.587 * p[j + 1] + 0.114 * p[j + 2])]++;
-    }
-    return h;
-  }, [target]);
 
   /* --------------------- F2 : transfert (live) ---------------------- */
   useEffect(() => {
@@ -342,7 +327,10 @@ function Shell() {
           else setPalette({ name: file.name, data });
           notify(`${as === "target" ? "Cible" : "Palette"} chargée — ${file.name}`);
         })
-        .catch(() => notify("Fichier illisible (JPG/PNG attendus)"));
+        .catch(() => notify("Fichier illisible (JPG/PNG attendus)"))
+        .finally(() => {
+          URL.revokeObjectURL(url);
+        });
     },
     [addUploadedImage, notify]
   );
@@ -568,106 +556,3 @@ function Shell() {
   );
 }
 
-/* --------------------------- sous-composants ------------------------ */
-
-function ModeSwitch({
-  mode,
-  setMode,
-  serverUp,
-  checking,
-  base,
-}: {
-  mode: "server" | "browser";
-  setMode: (m: "server" | "browser") => void;
-  serverUp: boolean;
-  checking: boolean;
-  base: string;
-}) {
-  const effectiveServer = mode === "server" && serverUp;
-  const dot = checking ? "bg-amber animate-pulse-dot" : effectiveServer ? "bg-teal" : mode === "server" ? "bg-rose" : "bg-bluec";
-  const label = checking
-    ? "détection…"
-    : effectiveServer
-      ? base
-        ? "FastAPI · " + base.replace("http://", "")
-        : "FastAPI · même origine"
-      : mode === "server"
-        ? "serveur hors-ligne → repli local"
-        : "moteur navigateur";
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-line bg-panel/70 px-2 py-1.5" title={label}>
-      <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
-      <div className="inline-flex rounded-md bg-bg1 p-0.5">
-        {(["server", "browser"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMode(m)}
-            className={`rounded px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider transition-all ${
-              mode === m ? "bg-panel2 text-ink ring-1 ring-line2" : "text-faint hover:text-sub"
-            }`}
-          >
-            {m === "server" ? "Serv." : "Nav."}
-          </button>
-        ))}
-      </div>
-      <span className="hidden max-w-[130px] truncate font-mono text-[9px] text-faint xl:block">{label}</span>
-    </div>
-  );
-}
-
-function DemoRow({
-  d,
-  isTarget,
-  isPalette,
-  meta,
-  onTarget,
-  onPalette,
-}: {
-  d: DemoImage;
-  isTarget: boolean;
-  isPalette: boolean;
-  meta: { label: string; cls: string; dot: string };
-  onTarget: () => void;
-  onPalette: () => void;
-}) {
-  return (
-    <div
-      className={`group relative overflow-hidden rounded-xl border transition-all duration-200 ${
-        isTarget ? "border-amber/70 ring-2 ring-amber/20" : isPalette ? "border-rose/60 ring-2 ring-rose/15" : "border-line hover:border-line2"
-      }`}
-    >
-      <button onClick={onTarget} className="block w-full text-left" title="Définir comme cible">
-        <img src={d.url} alt={d.label} className="h-[74px] w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" loading="lazy" />
-        <div className="bg-panel px-2.5 py-1.5">
-          <div className="flex items-center justify-between gap-1">
-            <span className="truncate text-[11px] font-semibold text-ink">{d.label}</span>
-            <span className={`flex shrink-0 items-center gap-1 rounded border px-1.5 py-px font-mono text-[8.5px] font-bold uppercase tracking-wider ${meta.cls}`}>
-              <span className={`h-1 w-1 rounded-full ${meta.dot}`} />
-              {meta.label}
-            </span>
-          </div>
-        </div>
-      </button>
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between p-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-        <span className="pointer-events-auto cursor-pointer rounded bg-bg0/85 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber ring-1 ring-amber/40" onClick={onTarget} title="Utiliser comme cible">
-          CIBLE
-        </span>
-        <span className="pointer-events-auto cursor-pointer rounded bg-bg0/85 px-1.5 py-0.5 font-mono text-[9px] font-bold text-rose ring-1 ring-rose/40" onClick={onPalette} title="Utiliser comme palette">
-          PALETTE
-        </span>
-      </div>
-      {isTarget && <span className="absolute left-1.5 top-1.5 rounded bg-amber px-1.5 py-px font-mono text-[8.5px] font-bold text-[#1a1204] group-hover:opacity-0">CIBLE</span>}
-      {isPalette && <span className="absolute left-1.5 top-1.5 rounded bg-rose px-1.5 py-px font-mono text-[8.5px] font-bold text-white group-hover:opacity-0">PALETTE</span>}
-    </div>
-  );
-}
-
-function SlotLine({ label, name, tone }: { label: string; name: string; tone: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2 py-1">
-      <span className={`font-mono text-[9.5px] font-bold tracking-wider ${tone}`}>{label}</span>
-      <span className="truncate text-[11px] text-sub">{name}</span>
-    </div>
-  );
-}

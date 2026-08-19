@@ -1,18 +1,17 @@
-import { useMemo } from "react";
 import { MiniHist } from "./charts";
 import { Chip } from "./ui";
 
-export default function Header({ target, mode, setMode, serverUp, checking, base, lumHist }: any) {
+export default function Header({ mode, setMode, serverUp, checking, base, lumHist }: any) {
   const effectiveServer = mode === "server" && serverUp;
   const label = checking
     ? "détection…"
     : effectiveServer
-    ? base
-      ? "FastAPI · " + base.replace("http://", "")
-      : "FastAPI · même origine"
-    : mode === "server"
-    ? "serveur hors-ligne → repli local"
-    : "moteur navigateur";
+      ? base
+        ? "FastAPI · " + base.replace("http://", "")
+        : "FastAPI · même origine"
+      : mode === "server"
+        ? "serveur hors-ligne → repli local"
+        : "moteur navigateur";
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg0/85 backdrop-blur-md">
@@ -33,7 +32,7 @@ export default function Header({ target, mode, setMode, serverUp, checking, base
           </div>
         </div>
 
-        <div className="ml-auto hidden items-center gap-3 md:flex">
+        <div className="ml-auto hidden items-center gap-3 md:flex" title={label}>
           <div className="rounded-lg border border-line bg-panel/70 px-2.5 py-1.5" title="Histogramme de luminance (live)">
             <MiniHist hist={lumHist} />
           </div>

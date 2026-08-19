@@ -59,8 +59,9 @@ async function main() {
   }
   const png = await fetchResultBlob(job.result_url!);
   const ms = (performance.now() - t0).toFixed(0);
-  const w2 = job.metrics.w2 as { L: number };
-  console.log(`[net] OK — round-trip ${ms} ms · W₂(L*) = ${w2.L.toFixed(1)} · PNG ${png.size} octets`);
+  const metrics = job.metrics ?? {};
+  const w2 = (metrics.w2 as { L?: number } | undefined) ?? { L: 0 };
+  console.log(`[net] OK — round-trip ${ms} ms · W₂(L*) = ${(w2.L ?? 0).toFixed(1)} · PNG ${png.size} octets`);
 
   // 2. même chemin via le pont (ce que consommeront les onglets)
   const t1 = performance.now();
