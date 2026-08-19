@@ -59,8 +59,8 @@ export function ForensicTab({
             <Btn className="w-full" onClick={onExportHeatmap} disabled={!res}>
               <IconDownload /> Exporter la heatmap
             </Btn>
-            <div className="rounded-lg border border-bluec/25 bg-bluec/5 p-2.5 font-mono text-[10.5px] leading-relaxed text-bluec/90">
-              Méthode : KL(bloc ‖ modèle global) sur les coefficients AC (3 ≤ u+v ≤ 6) + ratio de zéros. Essayez « Lac · ballon suspect » depuis la banque d'images.
+            <div className="rounded-lg border border-bluec/25 bg-bluec/5 p-2.5 text-[10.5px] leading-relaxed text-bluec/90">
+              Analyse locale des blocs pour repérer les zones qui sortent du comportement attendu. Idéal pour tester des images comme « Lac · ballon suspect » dans la banque d’images.
             </div>
           </Card>
         </div>

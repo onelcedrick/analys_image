@@ -42,6 +42,33 @@ const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: "forensic", label: "Forensic", icon: <IconScan /> },
 ];
 
+const UPLOADED_IMAGES_KEY = "histovision-uploaded-images-v1";
+
+type UploadedImage = {
+  id: string;
+  name: string;
+  dataUrl: string;
+};
+
+function readUploadedImages(): UploadedImage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(UPLOADED_IMAGES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is UploadedImage => !!item && typeof item.id === "string" && typeof item.name === "string" && typeof item.dataUrl === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function makeUploadedId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export default function App() {
   return (
     <ToastProvider>
@@ -56,7 +83,14 @@ function Shell() {
   /* Les démos sont générées en canvas (hors-ligne) : démarrage immédiat. */
   const [target, setTarget] = useState<ImgSlot | null>(() => ({ name: DEMOS[0].label, data: DEMOS[0].data }));
   const [palette, setPalette] = useState<ImgSlot | null>(() => ({ name: DEMOS[1].label, data: DEMOS[1].data }));
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(() => readUploadedImages());
   const [tab, setTab] = useState<TabId>("signal");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(UPLOADED_IMAGES_KEY, JSON.stringify(uploadedImages));
+    }
+  }, [uploadedImages]);
 
   /* ---- Bascule Serveur (FastAPI) ⇄ Navigateur (repli local) ---- */
   const { serverUp, base, checking } = useServerStatus();
@@ -193,19 +227,61 @@ function Shell() {
   }, [useServer]);
 
   /* --------------------------- actions ------------------------------ */
+  const addUploadedImage = useCallback((imageData: ImageData, name: string) => {
+    const dataUrl = imageDataToDataURL(imageData);
+    const safeName = name || "image";
+    setUploadedImages((prev) => {
+      const exists = prev.some((item) => item.name === safeName && item.dataUrl === dataUrl);
+      if (exists) return prev;
+      return [{ id: makeUploadedId(), name: safeName, dataUrl }, ...prev].slice(0, 18);
+    });
+  }, []);
+
+  const selectStoredImage = useCallback(
+    (item: UploadedImage, as: "target" | "palette") => {
+      loadImage(item.dataUrl)
+        .then((img) => {
+          const data = toImageData(img, as === "target" ? 1000 : 700);
+          if (as === "target") setTarget({ name: item.name, data });
+          else setPalette({ name: item.name, data });
+          notify(`${as === "target" ? "Cible" : "Palette"} : ${item.name}`);
+        })
+        .catch(() => notify("Image enregistrée illisible (JPG/PNG attendus)"));
+    },
+    [notify]
+  );
+
+  const removeUploadedImage = useCallback(
+    (id: string) => {
+      setUploadedImages((prev) => prev.filter((item) => item.id !== id));
+      const deleted = uploadedImages.find((item) => item.id === id);
+      if (!deleted) return;
+      const deletedUrl = deleted.dataUrl;
+      if (target && imageDataToDataURL(target.data) === deletedUrl) {
+        setTarget(null);
+      }
+      if (palette && imageDataToDataURL(palette.data) === deletedUrl) {
+        setPalette(null);
+      }
+      notify(`Image supprimée — ${deleted.name}`);
+    },
+    [notify, palette, target, uploadedImages]
+  );
+
   const loadFile = useCallback(
     (file: File, as: "target" | "palette") => {
       const url = URL.createObjectURL(file);
       loadImage(url)
         .then((img) => {
           const data = toImageData(img, as === "target" ? 1000 : 700);
+          addUploadedImage(data, file.name);
           if (as === "target") setTarget({ name: file.name, data });
           else setPalette({ name: file.name, data });
           notify(`${as === "target" ? "Cible" : "Palette"} chargée — ${file.name}`);
         })
         .catch(() => notify("Fichier illisible (JPG/PNG attendus)"));
     },
-    [notify]
+    [addUploadedImage, notify]
   );
 
   const loadDemo = useCallback(
@@ -245,6 +321,52 @@ function Shell() {
     };
     run();
   };
+
+  const quickThumbs = useMemo(() => {
+    const items: {
+      key: string;
+      title: string;
+      url: string;
+      onClick: () => void;
+      active: boolean;
+      deletable?: boolean;
+      deleteAction?: () => void;
+    }[] = [];
+
+    if (target) {
+      items.push({
+        key: `target-${target.name}`,
+        title: target.name,
+        url: imageDataToDataURL(target.data),
+        onClick: () => setTab("signal"),
+        active: true,
+      });
+    }
+
+    if (palette) {
+      items.push({
+        key: `palette-${palette.name}`,
+        title: palette.name,
+        url: imageDataToDataURL(palette.data),
+        onClick: () => setTab("transfert"),
+        active: false,
+      });
+    }
+
+    uploadedImages.forEach((item) => {
+      items.push({
+        key: `upload-${item.id}`,
+        title: item.name,
+        url: item.dataUrl,
+        onClick: () => selectStoredImage(item, "target"),
+        active: target ? target.name === item.name && imageDataToDataURL(target.data) === item.dataUrl : false,
+        deletable: true,
+        deleteAction: () => removeUploadedImage(item.id),
+      });
+    });
+
+    return items.slice(0, 12);
+  }, [target, palette, uploadedImages, removeUploadedImage, selectStoredImage]);
 
   const exportImage = (data: ImageData | null, name: string) => {
     if (!data) return;
@@ -296,12 +418,6 @@ function Shell() {
               </div>
             </div>
           </div>
-
-          <div className="ml-auto flex items-center gap-2 md:gap-3">
-            <div className="flex h-8 items-center rounded-md border border-line bg-panel2/60 px-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-faint">
-              v1.0
-            </div>
-          </div>
         </div>
       </header>
 
@@ -312,16 +428,33 @@ function Shell() {
 
         {/* -------- colonne principale -------- */}
         <main className="min-w-0 flex-1">
-          {/* bande démo mobile */}
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-            {DEMOS.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => loadDemo(d, "target")}
-                className={`shrink-0 overflow-hidden rounded-lg border transition-all ${target?.name === d.label ? "border-amber ring-2 ring-amber/30" : "border-line"}`}
-              >
-                <img src={d.url} alt={d.label} className="h-14 w-20 object-cover" loading="lazy" />
-              </button>
+          {/* bande de visuels rapides : démos + images chargées */}
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+            {quickThumbs.map((item) => (
+              <div key={item.key} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={item.onClick}
+                  className={`group block overflow-hidden rounded-lg border transition-all ${item.active ? "border-amber ring-2 ring-amber/30" : "border-line hover:border-line2"}`}
+                  title={item.title}
+                >
+                  <img src={item.url} alt={item.title} className="h-14 w-20 object-cover" loading="lazy" />
+                </button>
+                {item.deletable && item.deleteAction && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      item.deleteAction?.();
+                    }}
+                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-bg1 text-[10px] text-faint transition hover:text-rose"
+                    aria-label={`Supprimer ${item.title}`}
+                    title={`Supprimer ${item.title}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             ))}
           </div>
 
@@ -402,8 +535,6 @@ function Shell() {
               {lastOp.op} · {lastOp.ms.toFixed(0)} ms
             </span>
           )}
-
-          <span className="ml-auto hidden md:inline text-sub">{useServer ? "FastAPI · POT · OpenCV" : "navigateur · local"}</span>
         </div>
       </footer>
 
