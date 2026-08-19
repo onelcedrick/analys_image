@@ -8,7 +8,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { DEMOS, KIND_META, type DemoImage } from "./data/demos";
 import { downloadPNG, loadImage, toImageData, imageDataToDataURL, type ImgSlot } from "./lib/imaging";
 import { imageToLab } from "./lib/color";
 import {
@@ -50,15 +49,58 @@ type UploadedImage = {
   dataUrl: string;
 };
 
+export type PalettePreset = {
+  id: string;
+  label: string;
+  data: ImageData;
+};
+
+function makePalettePreset(id: string, label: string, colors: string[]): PalettePreset {
+  const w = 180;
+  const h = 120;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  colors.forEach((color, index) => {
+    g.addColorStop(index / (colors.length - 1), color);
+  });
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fillRect(0, 0, w, h * 0.22);
+
+  return { id, label, data: ctx.getImageData(0, 0, w, h) };
+}
+
+const PALETTE_PRESETS: PalettePreset[] = [
+  makePalettePreset("warm", "Chaud", ["#f8d7a1", "#f59e0b", "#b45309", "#5b2d0a"]),
+  makePalettePreset("cool", "Froid", ["#dbeaef", "#38bdf8", "#1d4ed8", "#0f172a"]),
+  makePalettePreset("garden", "Nature", ["#d9f99d", "#4ade80", "#15803d", "#14532d"]),
+];
+
 function readUploadedImages(): UploadedImage[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(UPLOADED_IMAGES_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is UploadedImage => !!item && typeof item.id === "string" && typeof item.name === "string" && typeof item.dataUrl === "string")
-      : [];
+    if (!Array.isArray(parsed)) return [];
+
+    const seen = new Set<string>();
+    const unique: UploadedImage[] = [];
+
+    for (const item of parsed) {
+      if (!item || typeof item.id !== "string" || typeof item.name !== "string" || typeof item.dataUrl !== "string") continue;
+      if (seen.has(item.dataUrl)) continue;
+      seen.add(item.dataUrl);
+      unique.push(item);
+    }
+
+    return unique;
   } catch {
     return [];
   }
@@ -80,9 +122,8 @@ export default function App() {
 function Shell() {
   const { notify } = useToast();
 
-  /* Les démos sont générées en canvas (hors-ligne) : démarrage immédiat. */
-  const [target, setTarget] = useState<ImgSlot | null>(() => ({ name: DEMOS[0].label, data: DEMOS[0].data }));
-  const [palette, setPalette] = useState<ImgSlot | null>(() => ({ name: DEMOS[1].label, data: DEMOS[1].data }));
+  const [target, setTarget] = useState<ImgSlot | null>(null);
+  const [palette, setPalette] = useState<ImgSlot | null>(() => ({ name: PALETTE_PRESETS[0].label, data: PALETTE_PRESETS[0].data }));
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(() => readUploadedImages());
   const [tab, setTab] = useState<TabId>("signal");
 
@@ -227,12 +268,22 @@ function Shell() {
   }, [useServer]);
 
   /* --------------------------- actions ------------------------------ */
+  const applyPresetPalette = useCallback((preset: PalettePreset) => {
+    setPalette({ name: preset.label, data: preset.data });
+    notify(`Palette : ${preset.label}`);
+  }, [notify]);
+
   const addUploadedImage = useCallback((imageData: ImageData, name: string) => {
     const dataUrl = imageDataToDataURL(imageData);
     const safeName = name || "image";
     setUploadedImages((prev) => {
-      const exists = prev.some((item) => item.name === safeName && item.dataUrl === dataUrl);
-      if (exists) return prev;
+      const existsIndex = prev.findIndex((item) => item.dataUrl === dataUrl);
+      if (existsIndex >= 0) {
+        const next = [...prev];
+        next.splice(existsIndex, 1);
+        next.unshift({ id: prev[existsIndex].id, name: safeName, dataUrl });
+        return next.slice(0, 18);
+      }
       return [{ id: makeUploadedId(), name: safeName, dataUrl }, ...prev].slice(0, 18);
     });
   }, []);
@@ -284,16 +335,6 @@ function Shell() {
     [addUploadedImage, notify]
   );
 
-  const loadDemo = useCallback(
-    (d: DemoImage, as: "target" | "palette") => {
-      const slot: ImgSlot = { name: d.label, data: d.data };
-      if (as === "target") setTarget(slot);
-      else setPalette(slot);
-      notify(as === "target" ? `Cible : ${d.label}` : `Palette : ${d.label}`);
-    },
-    [notify]
-  );
-
   const runForensicNow = () => {
     if (!target || busy) return;
     setBusy(useServer ? "DCT 8×8 sur le serveur — SciPy…" : "DCT 8×8 — analyse forensique…");
@@ -323,50 +364,19 @@ function Shell() {
   };
 
   const quickThumbs = useMemo(() => {
-    const items: {
-      key: string;
-      title: string;
-      url: string;
-      onClick: () => void;
-      active: boolean;
-      deletable?: boolean;
-      deleteAction?: () => void;
-    }[] = [];
-
-    if (target) {
-      items.push({
-        key: `target-${target.name}`,
-        title: target.name,
-        url: imageDataToDataURL(target.data),
-        onClick: () => setTab("signal"),
-        active: true,
-      });
-    }
-
-    if (palette) {
-      items.push({
-        key: `palette-${palette.name}`,
-        title: palette.name,
-        url: imageDataToDataURL(palette.data),
-        onClick: () => setTab("transfert"),
-        active: false,
-      });
-    }
-
-    uploadedImages.forEach((item) => {
-      items.push({
-        key: `upload-${item.id}`,
-        title: item.name,
-        url: item.dataUrl,
-        onClick: () => selectStoredImage(item, "target"),
-        active: target ? target.name === item.name && imageDataToDataURL(target.data) === item.dataUrl : false,
-        deletable: true,
-        deleteAction: () => removeUploadedImage(item.id),
-      });
-    });
+    const targetDataUrl = target ? imageDataToDataURL(target.data) : null;
+    const items = uploadedImages.map((item) => ({
+      key: `upload-${item.id}`,
+      title: item.name,
+      url: item.dataUrl,
+      onClick: () => selectStoredImage(item, "target"),
+      active: !!targetDataUrl && targetDataUrl === item.dataUrl,
+      deletable: true,
+      deleteAction: () => removeUploadedImage(item.id),
+    }));
 
     return items.slice(0, 12);
-  }, [target, palette, uploadedImages, removeUploadedImage, selectStoredImage]);
+  }, [target, uploadedImages, removeUploadedImage, selectStoredImage]);
 
   const exportImage = (data: ImageData | null, name: string) => {
     if (!data) return;
@@ -424,7 +434,7 @@ function Shell() {
       {/* ============================= CORPS =========================== */}
           <div className="app-container flex w-full flex-1 flex-col gap-5 px-4 py-5 sm:px-6 lg:flex-row">
         {/* -------- sidebar banque d'images -------- */}
-          <Sidebar target={target} palette={palette} fileTargetRef={fileTargetRef} filePaletteRef={filePaletteRef} loadDemo={loadDemo} />
+          <Sidebar target={target} palette={palette} fileTargetRef={fileTargetRef} filePaletteRef={filePaletteRef} />
 
         {/* -------- colonne principale -------- */}
         <main className="min-w-0 flex-1">
@@ -488,14 +498,15 @@ function Shell() {
             <TransferTab
               target={target}
               palette={palette}
+              presets={PALETTE_PRESETS}
               params={trParams}
               onParams={setTrParams}
               res={trRes}
               view={trView}
               onView={setTrView}
               onExport={exportImage}
-              onPaletteDemo={(d) => loadDemo(d, "palette")}
               onPaletteImport={() => filePaletteRef.current?.click()}
+              onPalettePreset={applyPresetPalette}
               lastOp={lastOp}
             />
           )}

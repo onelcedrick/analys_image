@@ -1,9 +1,9 @@
 /** Onglet 02 — F2 + F3 : transfert chromatique optimal en CIE Lab + protection peau. */
 
 import type { Dispatch, SetStateAction } from "react";
-import type { ImgSlot } from "../lib/imaging";
+import { imageDataToDataURL, type ImgSlot } from "../lib/imaging";
 import type { TransferResult } from "../lib/processing";
-import { DEMOS, type DemoImage } from "../data/demos";
+import type { PalettePreset } from "../App";
 import { Btn, Card, Chip, IconDownload, IconReset, IconUpload, SectionHead, Segmented, Slider } from "../components/ui";
 import { CompareSlider } from "../components/compare";
 import { Placeholder } from "./shared";
@@ -19,26 +19,28 @@ export type TrView = "result" | "mask";
 export function TransferTab({
   target,
   palette,
+  presets,
   params,
   onParams,
   res,
   view,
   onView,
   onExport,
-  onPaletteDemo,
   onPaletteImport,
+  onPalettePreset,
   lastOp,
 }: {
   target: ImgSlot | null;
   palette: ImgSlot | null;
+  presets: PalettePreset[];
   params: TransferUiParams;
   onParams: Dispatch<SetStateAction<TransferUiParams>>;
   res: TransferResult | null;
   view: TrView;
   onView: (v: TrView) => void;
   onExport: (data: ImageData | null, name: string) => void;
-  onPaletteDemo: (d: DemoImage) => void;
   onPaletteImport: () => void;
+  onPalettePreset: (preset: PalettePreset) => void;
   lastOp: { op: string; ms: number } | null;
 }) {
   const after = view === "result" ? res?.result ?? null : res?.maskVis ?? null;
@@ -62,19 +64,19 @@ export function TransferTab({
               <Chip tone="text-amber border-amber/30">Lab</Chip>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {DEMOS.filter((d) => d.kind === "palette").map((d) => (
+            <div className="grid grid-cols-3 gap-2">
+              {presets.map((preset) => (
                 <button
-                  key={d.id}
-                  onClick={() => onPaletteDemo(d)}
-                  className={`group relative overflow-hidden rounded-xl border text-left transition-all ${
-                    palette?.name === d.label ? "border-rose ring-2 ring-rose/30" : "border-line hover:border-line2"
+                  key={preset.id}
+                  type="button"
+                  onClick={() => onPalettePreset(preset)}
+                  className={`group overflow-hidden rounded-xl border text-left transition-all ${
+                    palette?.name === preset.label ? "border-rose ring-2 ring-rose/30" : "border-line hover:border-line2"
                   }`}
+                  title={preset.label}
                 >
-                  <img src={d.url} alt={d.label} className="h-16 w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" loading="lazy" />
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg0/95 to-transparent px-2 pb-1 pt-3 text-[10px] font-semibold text-ink">
-                    {d.label}
-                  </span>
+                  <img src={imageDataToDataURL(preset.data)} alt={preset.label} className="h-16 w-full object-cover" loading="lazy" />
+                  <span className="block bg-panel px-2 py-1 text-center text-[10px] font-semibold text-ink">{preset.label}</span>
                 </button>
               ))}
             </div>
