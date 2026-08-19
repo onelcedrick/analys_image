@@ -27,9 +27,9 @@ export function ForensicTab({
   return (
     <div className="animate-fade-up space-y-4">
       <SectionHead
-        k="F5 · BONUS — FORENSIQUE"
-        title="Détection de falsification par DCT 8×8"
-        desc="Chaque bloc 8×8 passe en DCT ; l'histogramme de ses coefficients AC moyenne fréquence est comparé au modèle global de l'image (divergence de Kullback–Leibler + excès de zéros). Les zones rapportées — double compression, copier-coller — divergent et s'illuminent."
+        k="FORENSIC"
+        title="Analyse visuelle de cohérence"
+        desc="Comparaison locale des blocs d’image pour repérer des variations de fréquence, des zones recollées ou des artefacts visuels susceptibles d’indiquer une modification."
       />
       <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
         <div className="space-y-4">

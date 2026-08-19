@@ -35,11 +35,11 @@ import Sidebar from "./components/Sidebar";
 
 type TabId = "signal" | "transfert" | "texture" | "forensic";
 
-const TABS: { id: TabId; n: string; label: string; icon: ReactNode }[] = [
-  { id: "signal", n: "01", label: "Signal", icon: <IconWave /> },
-  { id: "transfert", n: "02", label: "Transfert Lab", icon: <IconDrop /> },
-  { id: "texture", n: "03", label: "Texture", icon: <IconLayers /> },
-  { id: "forensic", n: "04", label: "Forensic DCT", icon: <IconScan /> },
+const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
+  { id: "signal", label: "Signal", icon: <IconWave /> },
+  { id: "transfert", label: "Transfer Lab", icon: <IconDrop /> },
+  { id: "texture", label: "Texture", icon: <IconLayers /> },
+  { id: "forensic", label: "Forensic", icon: <IconScan /> },
 ];
 
 export default function App() {
@@ -130,7 +130,7 @@ function Shell() {
         }
         if (!active) return;
         setTrRes(res);
-        setLastOp({ op: useServer ? "OT Lab · serveur (F2+F3)" : "OT Lab · navigateur (F2+F3)", ms: performance.now() - t0 });
+        setLastOp({ op: useServer ? "Transport Lab · serveur" : "Transport Lab · navigateur", ms: performance.now() - t0 });
       } catch (e) {
         if (active) notify(`Transfert serveur en échec — ${(e as Error).message}`);
       } finally {
@@ -166,7 +166,7 @@ function Shell() {
         }
         if (!active) return;
         setTxRes(res);
-        setLastOp({ op: useServer ? "Texture · serveur (F4)" : "Texture · navigateur (F4)", ms: performance.now() - t0 });
+        setLastOp({ op: useServer ? "Texture · serveur" : "Texture · navigateur", ms: performance.now() - t0 });
       } catch (e) {
         if (active) notify(`Texture serveur en échec — ${(e as Error).message}`);
       } finally {
@@ -279,41 +279,29 @@ function Shell() {
       <header className="sticky top-0 z-40 border-b border-line bg-bg0/85 backdrop-blur-md">
         <div className="app-container flex h-[58px] items-center gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <svg width="34" height="34" viewBox="0 0 34 34" className="shrink-0">
-              <rect width="34" height="34" rx="8" fill="#111a29" stroke="#2e405f" />
-              <rect x="7" y="17" width="4.5" height="10" rx="1.2" fill="#2ad4c2" className="animate-bar-grow" style={{ animationDelay: "0.05s" }} />
-              <rect x="14.5" y="8" width="4.5" height="19" rx="1.2" fill="#ffb224" className="animate-bar-grow" style={{ animationDelay: "0.18s" }} />
-              <rect x="22" y="12.5" width="4.5" height="14.5" rx="1.2" fill="#f45b8b" className="animate-bar-grow" style={{ animationDelay: "0.31s" }} />
-            </svg>
-            <div className="leading-none">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-line2 bg-panel/80 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+              <svg width="22" height="22" viewBox="0 0 34 34" className="shrink-0" aria-label="HistoVision logo">
+                <rect width="34" height="34" rx="8" fill="#111a29" stroke="#2e405f" />
+                <rect x="7" y="17" width="4.5" height="10" rx="1.2" fill="#2ad4c2" className="animate-bar-grow" style={{ animationDelay: "0.05s" }} />
+                <rect x="14.5" y="8" width="4.5" height="19" rx="1.2" fill="#ffb224" className="animate-bar-grow" style={{ animationDelay: "0.18s" }} />
+                <rect x="22" y="12.5" width="4.5" height="14.5" rx="1.2" fill="#f45b8b" className="animate-bar-grow" style={{ animationDelay: "0.31s" }} />
+              </svg>
+            </div>
+            <div className="leading-tight">
               <div className="flex items-center gap-2">
-                <span className="font-display text-[19px] font-bold tracking-tight">HistoVision</span>
-                <span className="rounded bg-amber px-1.5 py-0.5 font-mono text-[9.5px] font-bold tracking-[0.14em] text-[#1a1204]">PRO</span>
+                <span className="font-display text-[18px] font-bold tracking-tight text-ink">HistoVision</span>
+                <span className="rounded border border-line bg-panel2 px-1.5 py-0.5 font-mono text-[8.5px] font-semibold uppercase tracking-[0.16em] text-faint">
+                  v1.0
+                </span>
               </div>
-              <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.24em] text-faint">Analyse histogrammique · Transport optimal</div>
             </div>
           </div>
 
-          <div className="ml-auto hidden items-center gap-3 md:flex">
-            <div className="rounded-lg border border-line bg-panel/70 px-2.5 py-1.5" title="Histogramme de luminance (live)">
-              <MiniHist hist={lumHist} />
+          <div className="ml-auto flex items-center gap-2 md:gap-3">
+            <div className="flex h-8 items-center rounded-md border border-line bg-panel2/60 px-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-faint">
+              v1.0
             </div>
-            <div className="hidden flex-col gap-1 lg:flex">
-              <div className="flex gap-1.5">
-                <Chip tone="text-teal border-teal/30">CIE Lab D65</Chip>
-                <Chip tone="text-amber border-amber/30">OT 1D · W₂</Chip>
-              </div>
-              <div className="flex gap-1.5">
-                <Chip tone="text-rose border-rose/30">Skin mask</Chip>
-                <Chip tone="text-bluec border-bluec/30">DCT 8×8</Chip>
-              </div>
-            </div>
-            <Chip tone="text-ink border-line2 bg-panel2">v1.0 · 08/2026</Chip>
-            <ModeSwitch mode={mode} setMode={setMode} serverUp={serverUp} checking={checking} base={base} />
           </div>
-        </div>
-        <div className="relative h-[2px] overflow-hidden bg-line/40">
-          <div className="animate-scan absolute h-full w-1/3 bg-gradient-to-r from-transparent via-amber to-transparent" />
         </div>
       </header>
 
@@ -347,7 +335,6 @@ function Shell() {
                   tab === t.id ? "text-ink" : "text-sub hover:text-ink"
                 }`}
               >
-                <span className={`font-mono text-[10px] font-bold ${tab === t.id ? "text-amber" : "text-faint"}`}>{t.n}</span>
                 <span className={tab === t.id ? "text-teal" : "text-faint group-hover:text-sub"}>{t.icon}</span>
                 {t.label}
                 <span
@@ -400,20 +387,23 @@ function Shell() {
 
       {/* ============================ FOOTER =========================== */}
       <footer className="mt-auto border-t border-line bg-bg1/70">
-        <div className="app-container flex h-10 items-center gap-4 px-4 font-mono text-[10.5px] text-faint sm:px-6">
+        <div className="app-container flex h-10 items-center gap-3 px-4 font-mono text-[10.5px] text-faint sm:px-6">
           <span className="flex items-center gap-2">
             <span className={`h-1.5 w-1.5 rounded-full ${busy ? "animate-pulse-dot bg-amber" : "bg-teal"}`} />
-            <span className={busy ? "text-amber" : "text-sub"}>{busy ?? "pipeline idle — prêt"}</span>
+            <span className={busy ? "text-amber" : "text-sub"}>{busy ?? "Prêt"}</span>
           </span>
-          <span className="hidden sm:inline">
+
+          <span className="hidden sm:inline text-sub">
             {target ? `${target.data.width}×${target.data.height} px · ${((target.data.width * target.data.height) / 1e6).toFixed(2)} Mpx` : "aucune image"}
           </span>
+
           {lastOp && (
             <span className="tabular hidden text-teal md:inline">
-              {lastOp.op} : {lastOp.ms.toFixed(0)} ms
+              {lastOp.op} · {lastOp.ms.toFixed(0)} ms
             </span>
           )}
-          <span className="ml-auto">{useServer ? "moteur : FastAPI (POT · OpenCV · SciPy)" : "moteur : navigateur · zéro upload"}</span>
+
+          <span className="ml-auto hidden md:inline text-sub">{useServer ? "FastAPI · POT · OpenCV" : "navigateur · local"}</span>
         </div>
       </footer>
 

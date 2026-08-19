@@ -57,9 +57,9 @@ export function SignalTab({ target }: { target: ImgSlot | null }) {
   return (
     <div className="animate-fade-up space-y-4">
       <SectionHead
-        k="F1 · ACQUISITION"
-        title="Signal & histogrammes"
-        desc="L'image et sa fonction de distribution, en direct. Survolez l'image pour sonder un pixel (RVB + Lab), glissez sur l'histogramme pour zoomer une plage de niveaux."
+        k="SIGNAL"
+        title="Acquisition & analyse visuelle"
+        desc="Étude du signal image, de la distribution lumineuse et de la structure de scène. Survolez l’image pour inspecter un pixel et estimer la présence d’un sujet principal devant l’arrière-plan."
       />
       <div className="grid gap-4 xl:grid-cols-[1fr_330px]">
         <Card className="p-4">
