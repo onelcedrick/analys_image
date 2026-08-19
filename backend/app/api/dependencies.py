@@ -20,6 +20,8 @@ from app.infrastructure.persistence.cloudinary_storage import CloudinaryFileStor
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.file_storage import DiskFileStore
 from app.infrastructure.persistence.repositories import (
+    PostgresImageRepository,
+    PostgresJobRepository,
     SqliteImageRepository,
     SqliteJobRepository,
 )
@@ -33,6 +35,18 @@ from app.infrastructure.vision.transfer import TransferStrategy
 def get_database(request: Request) -> Database:
     """Base initialisée au démarrage (lifespan de main.py)."""
     return request.app.state.database
+
+
+def _build_image_repository(database: Database):
+    if getattr(database, "backend", "sqlite") in {"postgres", "postgresql", "neon"}:
+        return PostgresImageRepository(database)
+    return SqliteImageRepository(database)
+
+
+def _build_job_repository(database: Database):
+    if getattr(database, "backend", "sqlite") in {"postgres", "postgresql", "neon"}:
+        return PostgresJobRepository(database)
+    return SqliteJobRepository(database)
 
 
 def get_image_service(request: Request) -> ImageService:
@@ -50,12 +64,11 @@ def get_image_service(request: Request) -> ImageService:
 
     return ImageService(
         store=store,
-        images=SqliteImageRepository(request.app.state.database),
+        images=_build_image_repository(request.app.state.database),
         loader=CvImageLoader(store),
         max_side=settings.max_side,
         max_upload_mb=settings.max_upload_mb,
     )
-
 
 
 def get_analysis_service(request: Request) -> AnalysisService:
@@ -78,8 +91,8 @@ def get_analysis_service(request: Request) -> AnalysisService:
         store = DiskFileStore(settings.storage_path)
 
     database = request.app.state.database
-    images = SqliteImageRepository(database)
-    jobs = SqliteJobRepository(database)
+    images = _build_image_repository(database)
+    jobs = _build_job_repository(database)
     executor = InProcessJobExecutor(
         strategies={
             TransferStrategy.kind: TransferStrategy(skin=YcbcrSkinDetector()),

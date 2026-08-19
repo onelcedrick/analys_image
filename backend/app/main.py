@@ -13,10 +13,10 @@ from app.infrastructure.persistence.database import Database
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Stockage disque + schéma SQLite (requis pour upload / jobs)."""
+    """Initialise le backend de stockage des métadonnées."""
     settings = get_settings()
     settings.storage_path
-    db = Database(settings.db_path)
+    db = Database.from_settings(settings)
     await db.init()
     app.state.database = db
     yield

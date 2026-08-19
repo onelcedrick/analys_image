@@ -211,12 +211,12 @@ export function jointColor(t: number): [number, number, number, number] {
 
 /* --------------------------- export -------------------------------- */
 
-export function imageDataToDataURL(d: ImageData): string {
+export function imageDataToDataURL(d: ImageData, mimeType = "image/png", quality?: number): string {
   const c = document.createElement("canvas");
   c.width = d.width;
   c.height = d.height;
   c.getContext("2d")!.putImageData(d, 0, 0);
-  return c.toDataURL("image/png");
+  return c.toDataURL(mimeType, quality);
 }
 
 export function downloadPNG(d: ImageData, name: string): void {

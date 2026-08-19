@@ -128,10 +128,21 @@ function Shell() {
   const [tab, setTab] = useState<TabId>("signal");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(UPLOADED_IMAGES_KEY, JSON.stringify(uploadedImages));
+    if (typeof window === "undefined") return;
+
+    try {
+      const compact = uploadedImages.slice(0, 12);
+      window.localStorage.setItem(UPLOADED_IMAGES_KEY, JSON.stringify(compact));
+    } catch (error) {
+      console.warn("localStorage quota exceeded while persisting uploaded images:", error);
+      notify("Mémoire locale saturée — stockage des images limité");
+      try {
+        window.localStorage.removeItem(UPLOADED_IMAGES_KEY);
+      } catch {
+        // noop: ne rien faire si le navigateur refuse aussi la suppression
+      }
     }
-  }, [uploadedImages]);
+  }, [notify, uploadedImages]);
 
   /* ---- Bascule Serveur (FastAPI) ⇄ Navigateur (repli local) ---- */
   const { serverUp, base, checking } = useServerStatus();
@@ -274,7 +285,7 @@ function Shell() {
   }, [notify]);
 
   const addUploadedImage = useCallback((imageData: ImageData, name: string) => {
-    const dataUrl = imageDataToDataURL(imageData);
+    const dataUrl = imageDataToDataURL(imageData, "image/jpeg", 0.8);
     const safeName = name || "image";
     setUploadedImages((prev) => {
       const existsIndex = prev.findIndex((item) => item.dataUrl === dataUrl);
@@ -282,9 +293,9 @@ function Shell() {
         const next = [...prev];
         next.splice(existsIndex, 1);
         next.unshift({ id: prev[existsIndex].id, name: safeName, dataUrl });
-        return next.slice(0, 18);
+        return next.slice(0, 12);
       }
-      return [{ id: makeUploadedId(), name: safeName, dataUrl }, ...prev].slice(0, 18);
+      return [{ id: makeUploadedId(), name: safeName, dataUrl }, ...prev].slice(0, 12);
     });
   }, []);
 
