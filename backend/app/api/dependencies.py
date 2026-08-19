@@ -16,6 +16,7 @@ from app.application.services.analysis_service import AnalysisService
 from app.application.services.image_service import ImageService
 from app.config import get_settings
 from app.infrastructure.jobs.executor import InProcessJobExecutor
+from app.infrastructure.persistence.cloudinary_storage import CloudinaryFileStore
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.file_storage import DiskFileStore
 from app.infrastructure.persistence.repositories import (
@@ -37,7 +38,16 @@ def get_database(request: Request) -> Database:
 def get_image_service(request: Request) -> ImageService:
     """Compose le service image à partir des réglages et de la base."""
     settings = get_settings()
-    store = DiskFileStore(settings.storage_path)
+    if settings.storage_backend == "cloudinary":
+        store = CloudinaryFileStore(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+            folder=settings.cloudinary_folder,
+        )
+    else:
+        store = DiskFileStore(settings.storage_path)
+
     return ImageService(
         store=store,
         images=SqliteImageRepository(request.app.state.database),
@@ -57,7 +67,16 @@ def get_analysis_service(request: Request) -> AnalysisService:
     YCbCr aujourd'hui, MediaPipe demain, zéro changement dans le moteur.
     """
     settings = get_settings()
-    store = DiskFileStore(settings.storage_path)
+    if settings.storage_backend == "cloudinary":
+        store = CloudinaryFileStore(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+            folder=settings.cloudinary_folder,
+        )
+    else:
+        store = DiskFileStore(settings.storage_path)
+
     database = request.app.state.database
     images = SqliteImageRepository(database)
     jobs = SqliteJobRepository(database)

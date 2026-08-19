@@ -8,6 +8,7 @@ Aucune valeur magique ailleurs dans le code — tout passe par ici.
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,6 +30,17 @@ class Settings(BaseSettings):
 
     # Persistance
     storage_dir: Path = Path("./storage")
+    storage_backend: str = Field(default="local", validation_alias="HISTOVISION_STORAGE_BACKEND")
+
+    # Cloudinary
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    cloudinary_folder: str = "histovision"
+
+    # Neon / Postgres
+    database_backend: str = Field(default="sqlite", validation_alias="HISTOVISION_DATABASE_BACKEND")
+    database_url: str | None = Field(default=None, validation_alias="HISTOVISION_DATABASE_URL")
 
     # Traitement image
     max_side: int = 1080        # downscale automatique (perf §3.3 : pas de crash en 4K)
