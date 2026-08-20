@@ -105,3 +105,17 @@ def get_analysis_service(request: Request) -> AnalysisService:
         store=store,
     )
     return AnalysisService(jobs=jobs, images=images, executor=executor)
+
+
+def get_file_store(request: Request):
+    """FileStore actif (disque local ou Cloudinary) — pour servir les résultats."""
+    settings = get_settings()
+    if settings.storage_backend == "cloudinary":
+        return CloudinaryFileStore(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+            folder=settings.cloudinary_folder,
+        )
+    return DiskFileStore(settings.storage_path)
+

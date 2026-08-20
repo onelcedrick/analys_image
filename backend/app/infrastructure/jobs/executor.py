@@ -84,11 +84,13 @@ class InProcessJobExecutor:
                 self._compute, strategy, image, palette, job.params
             )
 
-            self._store.save_bytes(f"results/{job.id}.png", png)
+            result_url = self._store.save_bytes(f"results/{job.id}.png", png)
             self._store.save_bytes(
                 f"thumbs/{job.id}.jpg",
                 encode_jpeg(make_thumbnail(decode_image(png))),
             )
+            # URL réelle (local /storage/... ou Cloudinary https://...)
+            metrics = {**(metrics or {}), "result_url": result_url, "result_key": f"results/{job.id}.png"}
             job.complete(result_id=job.id, metrics=metrics)
         except Exception as exc:  # noqa: BLE001 — un job ne tue jamais le serveur
             log.exception("Échec du job %s", job.id)

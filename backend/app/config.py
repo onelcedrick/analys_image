@@ -60,9 +60,17 @@ class Settings(BaseSettings):
 
     @property
     def storage_path(self) -> Path:
-        """Chemin de stockage, créé à la volée si absent."""
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
-        return self.storage_dir
+        """Chemin de stockage absolu, créé à la volée si absent."""
+        root = self.storage_dir
+        if not root.is_absolute():
+            root = (Path.cwd() / root).resolve()
+        else:
+            root = root.resolve()
+        root.mkdir(parents=True, exist_ok=True)
+        (root / "images").mkdir(exist_ok=True)
+        (root / "thumbs").mkdir(exist_ok=True)
+        (root / "results").mkdir(exist_ok=True)
+        return root
 
     @property
     def db_path(self) -> Path:
