@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     max_side: int = 1080        # downscale automatique (perf §3.3 : pas de crash en 4K)
     max_upload_mb: int = 20     # limite d'upload (413 au-delà)
 
-    # API on va changer ca dans .env
+    # API
     api_base_url: str = "http://127.0.0.1:8000"
     cors_origins: list[str] = [
         "http://localhost:5173",
@@ -54,14 +54,22 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://localhost:5174",  # front Vite dev # front React/Next  # preview Qwen
+        "http://localhost:5174",  # front Vite dev # front React/Next
+        "https://8753d196-cc2f-42a0-a586-540357edfef9.preview.qwenlm.io",  # preview Qwen
     ]  # front Vite
 
     @property
     def storage_path(self) -> Path:
-        """Chemin de stockage, créé à la volée si absent."""
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
-        return self.storage_dir
+        """Chemin de stockage absolu, créé à la volée si absent."""
+        root = self.storage_dir
+        if not root.is_absolute():
+            root = (Path.cwd() / root).resolve()
+        else:
+            root = root.resolve()
+        root.mkdir(parents=True, exist_ok=True)
+        for sub in ("images", "thumbs", "results"):
+            (root / sub).mkdir(exist_ok=True)
+        return root
 
     @property
     def db_path(self) -> Path:
@@ -73,9 +81,3 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Singleton de configuration (injecté via FastAPI ``Depends``)."""
     return Settings()
-
-
-
-
-
-
