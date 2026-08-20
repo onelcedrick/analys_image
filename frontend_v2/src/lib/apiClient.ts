@@ -15,7 +15,7 @@ let detectionPromise: Promise<string | null> | null = null;
 async function probe(base: string): Promise<boolean> {
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 1500);
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     const res = await fetch(`${base}/api/health`, {
       signal: ctrl.signal,
       cache: "no-store",

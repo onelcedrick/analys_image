@@ -15,8 +15,8 @@ import {
 } from "./apiClient";
 import type { TransferResult } from "./processing";
 
-const POLL_MS = 300;
-const MAX_WAIT_MS = 60_000;
+const POLL_MS = 2000;
+const MAX_WAIT_MS = 10 * 60_000; // 10 min — serveur free / cold start
 
 /* Local result types (the processing module only exports TransferResult for now) */
 export interface TextureResult {
