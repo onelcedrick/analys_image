@@ -1,15 +1,3 @@
-"""Stockage disque des binaires — implémente le port FileStore du domaine.
-
-Arborescence servie en statique par FastAPI (montage /storage) :
-
-    storage/
-    ├── images/<id>.png      originaux uploadés (déjà redimensionnés)
-    ├── thumbs/<id>.jpg      aperçus pour la banque d'images du front
-    └── results/<id>.png     résultats d'analyse (transfert, texture, heatmap)
-
-Convention de clés : 'images/ab12cd.png'. Le domaine et l'application ne
-voient que des clés et des URL relatives — jamais de chemins absolus.
-"""
 
 from __future__ import annotations
 
